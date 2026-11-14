@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if title %}{{ title }} · {% endif %}UMBRAL CRISP-ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f5f1;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#8a8984;--line:#e6e5e0;
+  --accent:#2a78d6;--accent-soft:#e3eefb;--warn:#a35f00;--warn-soft:#fff3dc;--good:#0a7a3e;--bad:#b42318;--nav:#14131a;--navink:#f0efec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121116;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;
+  --muted:#8f8e88;--line:#2e2d33;--accent:#3987e5;--accent-soft:#1d2b3d;--warn:#e0a63a;--warn-soft:#3a2c12;--good:#4cc27e;--bad:#f07a70;--nav:#0b0a0f}}
+:root[data-theme="dark"]{--bg:#121116;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#8f8e88;--line:#2e2d33;
+  --accent:#3987e5;--accent-soft:#1d2b3d;--warn:#e0a63a;--warn-soft:#3a2c12;--good:#4cc27e;--bad:#f07a70;--nav:#0b0a0f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+a{color:var(--accent)}
+header{background:var(--nav);color:var(--navink)}
+.top{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.logo{font-family:"Press Start 2P",monospace;font-size:14px;color:#f6c453;text-decoration:none;letter-spacing:1px}
+.logo small{display:block;font:600 11px Inter;color:#c3c2b7;letter-spacing:0;margin-top:4px}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+nav a{color:var(--navink);text-decoration:none;padding:6px 9px;border-radius:6px;font-size:13px;opacity:.85}
+nav a:hover,nav a.on{background:#2a2933;opacity:1}
+nav a .n{display:inline-block;width:18px;height:18px;border-radius:50%;background:#2a78d6;color:#fff;text-align:center;font-size:11px;line-height:18px;margin-right:5px}
+main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:28px;margin:6px 0 4px;line-height:1.2}
+h2{font-size:20px;margin:34px 0 8px;padding-top:10px;border-top:1px solid var(--line)}
+h3{font-size:16px;margin:20px 0 6px}
+.lead{color:var(--ink2);font-size:16px;max-width:860px}
+.banner{background:var(--warn-soft);color:var(--ink);border-left:4px solid var(--warn);padding:10px 14px;border-radius:6px;margin:12px 0}
+.banner b{color:var(--warn)}
+.note{background:var(--accent-soft);border-left:4px solid var(--accent);padding:10px 14px;border-radius:6px;margin:12px 0}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card h3{margin-top:0}
+.stat{font-size:28px;font-weight:700;line-height:1.1}
+.stat small{display:block;font-size:12px;font-weight:400;color:var(--ink2);margin-top:4px}
+table{border-collapse:collapse;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13.5px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--bg);color:var(--ink2);font-weight:600}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+tr.chosen td{background:var(--accent-soft);font-weight:600}
+.scroll{overflow-x:auto}
+figure{margin:14px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+figure img{max-width:100%;height:auto;display:block;margin:0 auto}
+figcaption{font-size:12.5px;color:var(--ink2);margin-top:6px}
+.two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--line);background:var(--surface)}
+.tag.sim{background:var(--warn-soft);border-color:var(--warn);color:var(--ink)}
+.tag.ok{border-color:var(--good);color:var(--good)} .tag.bad{border-color:var(--bad);color:var(--bad)}
+.pager{display:flex;justify-content:space-between;margin-top:40px;gap:10px;flex-wrap:wrap}
+.pager a{padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-decoration:none}
+label{display:block;font-size:13px;color:var(--ink2);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit}
+input[type=checkbox]{width:auto}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:600 14px Inter;cursor:pointer;margin-top:12px}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+footer{max-width:1180px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:12.5px}
+ul.tight li{margin:3px 0}
+@media (max-width:640px){h1{font-size:23px}nav{margin-left:0}}
+</style>
+</head>
+<body>
+<header><div class="top">
+  <a class="logo" href="{{ url_for('home') }}">UMBRAL<small>CRISP-ML · the game's machine learning</small></a>
+  <nav>
+    {% for i, name, slug in PHASES %}<a href="{{ url_for('phase', n=i) }}" class="{{ 'on' if n == i }}" title="{{ name }}"><span class="n">{{ i }}</span>{{ slug|capitalize }}</a>{% endfor %}
+    <a href="{{ url_for('demo') }}" class="{{ 'on' if title == 'Live demo' }}">▶ Demo</a>
+    {% if has_pdf %}<a href="{{ url_for('report_pdf') }}">PDF</a>{% endif %}
+  </nav>
+</div></header>
+<main>
+{% if R.source == 'SIMULATED' %}
+<div class="banner"><b>SIMULATED DATA.</b> The real anonymous gameplay log started recording in November 2026 and so far
+has {{ '{:,}'.format(D.real_available.actions) }} real actions from {{ D.real_available.players }} players, below the minimum
+fixed in Phase 1 ({{ '{:,}'.format(D.real_available.min_actions) }} actions, {{ D.real_available.min_players }} players).
+Every number on this page comes from <b>simulated players</b> built from the game's rules, until
+<code>python pipeline.py --source real</code> is run on the real data. Real production evidence is labelled REAL.</div>
+{% endif %}
+{% block body %}{% endblock %}
+{% if n %}
+<div class="pager">
+  {% if n > 1 %}<a href="{{ url_for('phase', n=n-1) }}">← Phase {{ n-1 }} · {{ PHASES[n-2][1] }}</a>{% else %}<a href="{{ url_for('home') }}">← Project cover</a>{% endif %}
+  {% if n < 6 %}<a href="{{ url_for('phase', n=n+1) }}">Phase {{ n+1 }} · {{ PHASES[n][1] }} →</a>{% else %}<a href="{{ url_for('demo') }}">Live demo →</a>{% endif %}
+</div>
+{% endif %}
+</main>
+<footer>UMBRAL · J.A · J.P · J.Q · Data source of this build: <b>{{ R.source }}</b> · trained {{ R.trained_at }} · scikit-learn {{ R.sklearn }} ·
+the report PDF, the repository and this app are generated from the same files (<code>reports/results.json</code>).</footer>
+</body>
+</html>

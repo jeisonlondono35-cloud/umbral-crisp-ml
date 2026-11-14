@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block body %}
+{% set b = D.before %}
+<p class="tag">Phase 1</p>
+<h1>Business & Data Understanding</h1>
+<p class="lead">What problem is being solved, for whom, what the model must answer, which data exists, whether it is good
+enough, and how success will be measured — fixed <b>before</b> training anything.</p>
+
+<h2>1.1 The approved problem and its context</h2>
+<p>UMBRAL is a game about grief: Eco, the hero, crosses five worlds (sadness, denial, anger, bargaining, depression) and
+fights a boss in each one, then the Wolf at the Threshold. The design goal of the team is that <b>bosses feel like they
+learn you</b>: a player who always shields gets feinted, one who always dodges backwards gets aimed at, one who repeats a
+pattern gets read. The game already does this with three small models that learn <i>online</i> while you play
+(<code>scripts/ml_brain.gd</code>): an order-2 Markov chain that predicts your next action, a running mean of how you
+dodge, and a contextual bandit (one logistic regression per attack) that estimates whether an attack will hit you.</p>
+<p><b>Approved project:</b> study the whole ML of the game with CRISP-ML — measure how well those three models really work,
+compare them with other algorithms on recorded play data, choose the best one with a criterion fixed in advance, deploy it,
+and plan its monitoring.</p>
+
+<h3>Stakeholders and beneficiaries</h3>
+<div class="scroll"><table>
+<tr><th>Who</th><th>Role</th><th>What they need</th></tr>
+<tr><td>Players</td><td>Main beneficiaries; produce the data</td><td>Fights that adapt to them and stay fair; transparency about the data</td></tr>
+<tr><td>J.A</td><td>Creator, lead developer, domain expert, owner of the model and the data</td><td>Know if the in-game ML works and which model to ship</td></tr>
+<tr><td>J.P</td><td>Game developer (integration in Godot)</td><td>A model that runs on phones in real time</td></tr>
+<tr><td>J.Q</td><td>Developer (website, reports)</td><td>Indicators and reports that can be published</td></tr>
+<tr><td>Course instructor</td><td>Evaluator</td><td>A traceable CRISP-ML process</td></tr>
+</table></div>
+
+<h2>1.2 Business objectives → ML objectives</h2>
+<div class="scroll"><table>
+<tr><th>Business objective</th><th>ML objective</th><th>Learning task</th></tr>
+<tr><td>Bosses anticipate what you do (feint the shield, wait for the dodge)</td><td>Predict the player's next action better than the current in-game model and than "always the most common action"</td><td>Multiclass classification, 6 classes, sequential data</td></tr>
+<tr><td>Bosses choose attacks that challenge but are fair</td><td>Estimate P(attack hits | situation) with <b>well-calibrated</b> probabilities (the boss compares probabilities between attacks)</td><td>Binary classification (probabilistic)</td></tr>
+<tr><td>Bosses aim where you go</td><td>Predict the dodge offset in the boss frame</td><td>Regression (2D)</td></tr>
+<tr><td>It must run on a phone, during a fight</td><td>Prediction in milliseconds, small model file, learns a new player fast</td><td>Constraint on every candidate</td></tr>
+</table></div>
+
+<h3>Questions the model answers</h3>
+<ol class="tight">
+<li>Given the player's last actions and the situation, which action comes next, and how sure are we?</li>
+<li>If the boss uses attack <i>m</i> now, what is the probability that it hits?</li>
+<li>Where will this player move while the boss announces a charge?</li>
+</ol>
+
+<h2>1.3 Data sources, variables, size and target</h2>
+<div class="scroll"><table>
+<tr><th>Source</th><th>What it is</th><th>Status</th></tr>
+<tr><td><b>Anonymous gameplay log</b> (<code>umbral_ml_log</code>, Supabase)</td><td>Added to the game for this project (<code>scripts/ml_log.gd</code>): every action in combat, every boss attack with its 8 situation features and whether it hit, every dodge. No user name, no account: a random player id and a random session id. Players can switch it off (Accessibility → Share gameplay (ML)).</td>
+<td><span class="tag">REAL</span> recording since Nov 2026 · {{ '{:,}'.format(D.real_available.actions) }} actions, {{ D.real_available.players }} players so far</td></tr>
+<tr><td><b>In-game accuracy per account</b> (<code>umbral_ml_public</code>)</td><td>Each account reports how many next-action predictions its model made and how many were right (sequential, real).</td>
+<td><span class="tag">REAL</span> {{ PUB.players }} players · {{ '{:,}'.format(PUB.made) }} predictions · {{ (PUB.right/PUB.made)|pct }} correct</td></tr>
+<tr><td><b>Simulated players</b> (<code>src/umbral_ml/simulate.py</code>)</td><td>Players generated from the game's rules (same actions, attacks, features and in-game models) with personal habits, context effects and drift — used while the real log is too small, and for the monitoring test.</td>
+<td><span class="tag sim">SIMULATED</span> {{ '{:,}'.format(b.events) }} events · {{ b.players }} players · {{ b.sessions }} sessions</td></tr>
+</table></div>
+
+<h3>Variables</h3>
+<div class="scroll"><table>
+<tr><th>Variable</th><th>Type</th><th>Meaning</th></tr>
+<tr><td><code>a</code> (target, task 1)</td><td>categorical (6)</td><td>The action: shoot, melee, block, dodge, jump, hide</td></tr>
+<tr><td><code>p</code>, <code>pp</code></td><td>categorical / 0..1</td><td>What the in-game predictor expected before the action (lets us measure the deployed model exactly)</td></tr>
+<tr><td><code>gap</code></td><td>ms</td><td>Time since the previous action (over 4 s starts a new "phrase")</td></tr>
+<tr><td><code>ne</code></td><td>px</td><td>Distance to the nearest enemy</td></tr>
+<tr><td><code>w</code>, <code>sc</code>, <code>m</code>, <code>d</code>, <code>hp</code></td><td>context</td><td>World 1–5, scene, mode (story / waves / pantheon), difficulty 0–3, life</td></tr>
+<tr><td><code>mv</code>, <code>x[8]</code></td><td>categorical, 8 numbers</td><td>Boss attack and its situation: bias, close, far, in the air, blocking, moving, low life, how much the predictor expects a dodge/jump</td></tr>
+<tr><td><code>y</code> (target, task 2)</td><td>0/1</td><td>The attack hit the player within 1.6 s</td></tr>
+<tr><td><code>ox</code>, <code>oy</code> (target, task 3)</td><td>px</td><td>Dodge offset in the boss frame (x = away, y = sideways)</td></tr>
+</table></div>
+<p>Size of the dataset used in this build ({{ D.source }}): <b>{{ '{:,}'.format(D.rows.actions) }}</b> actions,
+<b>{{ '{:,}'.format(D.rows.hits) }}</b> boss attacks, <b>{{ '{:,}'.format(D.rows.dodges) }}</b> dodges, from {{ b.players }} players.</p>
+<div class="two">
+<figure><img src="{{ url_for('figure', name='fig_classes.png') }}" alt="share of each action"><figcaption>Class balance of the next-action target: unbalanced, so accuracy alone is not enough (macro-F1 and log loss are also reported).</figcaption></figure>
+<figure><img src="{{ url_for('figure', name='fig_hit_by_move.png') }}" alt="hit rate per attack"><figcaption>Hit rate per boss attack (overall {{ b.hit_rate|pct }}): attacks behave differently, which supports one slope per attack.</figcaption></figure>
+</div>
+
+<h2>1.4 Quality, relevance and sufficiency</h2>
+<ul>
+<li><b>Quality:</b> the log is written by the game itself, so values are typed and bounded; known problems are measured in Phase 2: duplicated batches ({{ b.duplicate_events }} events), distance "9999" when no enemy is found ({{ b.ne_sentinel_9999 }}), long pauses.</li>
+<li><b>Relevance:</b> it records exactly what the in-game models see at the moment they decide, so a better model can be swapped in without new sensors.</li>
+<li><b>Sufficiency:</b> the minimum to train on real data was fixed at <b>{{ '{:,}'.format(D.real_available.min_actions) }} actions from {{ D.real_available.min_players }} players</b>, and at least 10 players to split by player. Until then the pipeline runs on simulated players and says so on every page.</li>
+</ul>
+
+<h2>1.5 Feasibility, limits and risks</h2>
+<div class="scroll"><table>
+<tr><th>Risk / limit</th><th>Mitigation</th></tr>
+<tr><td>Few real players at the start; data from friends of the team (not representative)</td><td>Simulated players to build and test the pipeline; re-run on real data; split by player; report per segment</td></tr>
+<tr><td>Players change over time (they learn, the game is updated)</td><td>Online models with forgetting; drift monitoring (Phase 6)</td></tr>
+<tr><td>Privacy of the players</td><td>No user, name or e-mail; random ids; opt-out switch; only anonymous events are public</td></tr>
+<tr><td>The boss "reads your mind" and feels unfair or too hard (expert)</td><td>Predictions only used above a reliability threshold, capped (the boss waits for a dodge at most 60% of the time), telegraphs always shown; difficulty monitored</td></tr>
+<tr><td>Must run on phones in real time</td><td>Latency and size measured for every candidate</td></tr>
+</table></div>
+
+<h2>1.6 Success criteria (measurable, fixed before training)</h2>
+<div class="scroll"><table>
+<tr><th>#</th><th>Criterion</th><th>Threshold</th></tr>
+<tr><td>S1</td><td>Next action: test accuracy above the majority class</td><td>≥ +10 points</td></tr>
+<tr><td>S2</td><td>Next action: chosen model not worse than the current in-game model on test</td><td>accuracy ≥ in-game</td></tr>
+<tr><td>S3</td><td>Hit: Brier score of the chosen model below the in-game bandit and the constant rate</td><td>lower on test</td></tr>
+<tr><td>S4</td><td>Dodge: mean error below the in-game running mean</td><td>lower on test</td></tr>
+<tr><td>S5</td><td>Serving: prediction latency in the demo</td><td>&lt; 50 ms per request</td></tr>
+<tr><td>S6</td><td>Selection rule</td><td>best <b>validation</b> score (accuracy / Brier / px), log loss not worse than the majority class; test used only once at the end</td></tr>
+</table></div>
+{% endblock %}

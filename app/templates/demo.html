@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="tag">Phase 5 · Live demo</p>
+<h1>Ask the boss</h1>
+<p class="lead">Describe what a player has just done and the situation. The saved models answer what the player will do
+next and whether a boss attack would hit. Every request is logged for monitoring (<a href="{{ url_for('live') }}">/monitoring/live</a>).</p>
+{% if err %}<p class="banner"><b>Input error:</b> {{ err }}</p>{% endif %}
+<form method="post" class="two">
+  <div class="card">
+    <h3>The player</h3>
+    <label>Recent actions, oldest first (comma separated: {{ ACTIONS|join(', ') }})</label>
+    <input name="history" value="{{ form.history }}">
+    <label><input type="checkbox" name="is_start" {{ 'checked' if form.is_start }}> More than 4 s since the last action (a new "phrase")</label>
+    <div class="two" style="gap:10px">
+      <div><label>World</label><select name="w">{% for k, v in WORLDS.items() %}<option value="{{ k }}" {{ 'selected' if form.w|string == k|string }}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label>Mode</label><select name="mode">{% for k, v in MODES.items() %}<option value="{{ k }}" {{ 'selected' if form.mode == k }}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label>Difficulty</label><select name="diff">{% for k, v in DIFFS.items() %}<option value="{{ k }}" {{ 'selected' if form['diff']|string == k|string }}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label>Life (hearts)</label><input name="hp" type="number" min="1" max="12" value="{{ form.hp }}"></div>
+      <div><label>Distance to nearest enemy (px, empty = unknown)</label><input name="ne" type="number" min="0" max="400" value="{{ form.ne }}"></div>
+      <div><label><input type="checkbox" name="boss" {{ 'checked' if form.boss }}> Boss fight</label></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>A boss attack</h3>
+    <label>Attack</label><select name="move">{% for m in MOVES %}<option {{ 'selected' if form.move == m }}>{{ m }}</option>{% endfor %}</select>
+    <label>Situation when the attack starts</label>
+    {% for x, txt in [('close','closer than 70 px'),('far','farther than 150 px'),('in_air','player in the air'),('blocking','player blocking'),('moving','player moving'),('low_hp','2 hearts or less')] %}
+    <label style="display:inline-block;margin-right:12px"><input type="checkbox" name="{{ x }}" {{ 'checked' if form[x] }}> {{ txt }}</label>{% endfor %}
+    <label>How much the game expects a dodge/jump (0–1)</label><input name="expects_evade" type="number" step="0.05" min="0" max="1" value="{{ form.expects_evade or 0 }}">
+    <button type="submit">Predict</button>
+  </div>
+</form>
+
+{% if out_next %}
+<h2>Answer</h2>
+<div class="two">
+  <div class="card"><h3>Next action: {{ AL[out_next.prediction] }} · {{ out_next.probability|pct(0) }}</h3>
+    <p style="font-size:13px;color:var(--ink2)">Model: {{ out_next.model }}. The current in-game model would say:
+    {% if out_next.in_game.prediction %}<b>{{ AL[out_next.in_game.prediction] }}</b> ({{ out_next.in_game.probability|pct(0) }}){% else %}nothing yet (not enough of this player's history){% endif %}.</p>
+    {% for a, p in out_next.proba.items()|sort(attribute='1', reverse=True) %}
+      <div style="display:flex;gap:8px;align-items:center;margin:4px 0"><span style="width:110px;font-size:13px">{{ AL[a] }}</span>
+      <div class="bar" style="flex:1"><i style="width:{{ (p*100)|round(1) }}%"></i></div><span style="width:46px;text-align:right;font-size:13px">{{ p|pct(0) }}</span></div>
+    {% endfor %}
+  </div>
+  <div class="card"><h3>Attack "{{ out_hit.features.mv }}" hits: {{ out_hit.p_hit|pct(0) }}</h3>
+    <div class="bar"><i style="width:{{ (out_hit.p_hit*100)|round(1) }}%"></i></div>
+    <p style="font-size:13px;color:var(--ink2)">Model: {{ out_hit.model }}. {% if not out_hit.known_move %}This attack was not in the training data: the answer uses only the situation.{% endif %}
+    The boss uses this to pick the attack most likely to hit <i>now</i> (with fairness limits in the game).</p>
+  </div>
+</div>
+<h3>Features sent to the model (built exactly as in training)</h3>
+<pre>{{ out_next.features|tojson(indent=1) }}</pre>
+{% endif %}
+{% endblock %}

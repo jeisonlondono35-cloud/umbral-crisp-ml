@@ -1,0 +1,27 @@
+# Phase 6: every Monday download the real anonymous gameplay log, retrain, evaluate, run the monitoring
+# test and rebuild the report. If anything changed it is committed, and Render redeploys the app.
+name: weekly-retrain
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -r requirements.txt
+      - run: python pipeline.py --source auto
+      - name: Commit results
+        run: |
+          git config user.name "umbral-ml-bot"
+          git config user.email "umbral-ml-bot@users.noreply.github.com"
+          git add -A data models reports monitoring
+          git diff --cached --quiet || git commit -m "Weekly retrain: $(date -u +%F)"
+          git push

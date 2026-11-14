@@ -1,0 +1,76 @@
+{
+ "source": "SIMULATED",
+ "trained_at": "2026-11-14T20:45:23+00:00",
+ "sklearn": "1.9.1",
+ "next_action": {
+  "model": "Gradient boosting (HistGB)",
+  "features": [
+   "prev1",
+   "prev2",
+   "mode",
+   "is_start",
+   "w",
+   "diff",
+   "hp",
+   "ne",
+   "boss",
+   "hist_shoot",
+   "hist_melee",
+   "hist_block",
+   "hist_dodge",
+   "hist_jump",
+   "hist_hide",
+   "log_hist",
+   "mk_shoot",
+   "mk_melee",
+   "mk_block",
+   "mk_dodge",
+   "mk_jump",
+   "mk_hide"
+  ],
+  "test": {
+   "accuracy": 0.5490461538461539,
+   "macro_f1": 0.4095598608791701,
+   "log_loss": 1.2780031127823128
+  }
+ },
+ "hit": {
+  "model": "Logistic regression [situation x attack]",
+  "features": [
+   "mv",
+   "family",
+   "mode",
+   "x_close",
+   "x_far",
+   "x_in_air",
+   "x_blocking",
+   "x_moving",
+   "x_low_hp",
+   "x_expects_evade",
+   "w",
+   "diff"
+  ],
+  "test": {
+   "brier": 0.18939634531853772,
+   "roc_auc": 0.6662870550375081,
+   "log_loss": 0.5649484962661269
+  }
+ },
+ "dodge": {
+  "model": "Per-player mean shrunk to global (k=0.5)",
+  "test": {
+   "Per-player mean shrunk to global (k=0.5)": {
+    "mean_error_px": 31.868827308161286
+   },
+   "In-game running mean": {
+    "mean_error_px": 35.83298084900067
+   },
+   "Global mean (train)": {
+    "mean_error_px": 46.970900488136
+   },
+   "No movement (0, 0)": {
+    "mean_error_px": 57.39108715107584
+   }
+  }
+ }
+}

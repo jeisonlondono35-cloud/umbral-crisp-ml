@@ -1,0 +1,1325 @@
+{
+ "serving": {
+  "next_ms": 27.763802999998006,
+  "hit_ms": 18.341185999997833,
+  "model_kb": {
+   "dodge.joblib": 0.2,
+   "hit.joblib": 20.7,
+   "next_action.joblib": 591.3,
+   "next_action_global.joblib": 591.3
+  }
+ },
+ "source": "SIMULATED",
+ "trained_at": "2026-11-14T20:45:23+00:00",
+ "sklearn": "1.9.1",
+ "data": {
+  "source": "SIMULATED",
+  "real_available": {
+   "actions": 0,
+   "players": 0,
+   "batches": 0,
+   "min_actions": 1500,
+   "min_players": 3
+  },
+  "before": {
+   "events": 47052,
+   "players": 48,
+   "sessions": 243,
+   "by_kind": {
+    "a": 37288,
+    "h": 8740,
+    "v": 1024
+   },
+   "duplicate_events": 1070,
+   "missing": {
+    "a": 0,
+    "hp": 0,
+    "ne": 0,
+    "gap": 0,
+    "mv": 0,
+    "y": 0,
+    "x_bias": 0,
+    "x_close": 0,
+    "x_far": 0,
+    "x_in_air": 0,
+    "x_blocking": 0,
+    "x_moving": 0,
+    "x_low_hp": 0,
+    "x_expects_evade": 0
+   },
+   "ne_sentinel_9999": 1105,
+   "invalid_action": 0,
+   "gap_over_10min": 0,
+   "action_classes": {
+    "shoot": 11071,
+    "dodge": 6585,
+    "melee": 6292,
+    "block": 5505,
+    "jump": 4342,
+    "hide": 3493
+   },
+   "hit_rate": 0.2725400457665904,
+   "hit_by_move": {
+    "summon": 1483,
+    "volley": 1400,
+    "repel": 1397,
+    "dive": 1393,
+    "feint": 1375,
+    "special": 1361,
+    "lobo_zarpas": 91,
+    "lobo2_breath": 84,
+    "lobo_charge": 81,
+    "espejo_shot": 75
+   }
+  },
+  "after": {
+   "events": 45982,
+   "players": 48,
+   "sessions": 243,
+   "by_kind": {
+    "a": 36472,
+    "h": 8513,
+    "v": 997
+   },
+   "duplicate_events": 0,
+   "missing": {
+    "a": 0,
+    "hp": 0,
+    "ne": 1085,
+    "gap": 0,
+    "mv": 0,
+    "y": 0,
+    "x_bias": 0,
+    "x_close": 0,
+    "x_far": 0,
+    "x_in_air": 0,
+    "x_blocking": 0,
+    "x_moving": 0,
+    "x_low_hp": 0,
+    "x_expects_evade": 0
+   },
+   "ne_sentinel_9999": 0,
+   "invalid_action": 0,
+   "gap_over_10min": 0,
+   "action_classes": {
+    "shoot": 10879,
+    "dodge": 6323,
+    "melee": 6189,
+    "block": 5438,
+    "jump": 4251,
+    "hide": 3392
+   },
+   "hit_rate": 0.27146716786091857,
+   "hit_by_move": {
+    "summon": 1438,
+    "volley": 1370,
+    "repel": 1359,
+    "dive": 1350,
+    "feint": 1339,
+    "special": 1326,
+    "lobo_zarpas": 91,
+    "lobo2_breath": 84,
+    "lobo_charge": 81,
+    "espejo_shot": 75
+   }
+  },
+  "transformations": [
+   {
+    "step": "Drop duplicated events",
+    "why": "A batch re-uploaded after a lost server answer repeats the same (player, session, kind, time) events.",
+    "rows_before": 47052,
+    "rows_after": 45982
+   },
+   {
+    "step": "Drop inconsistent rows",
+    "why": "Unknown action names or a world outside 1..5 cannot come from the game.",
+    "rows_before": 45982,
+    "rows_after": 45982
+   },
+   {
+    "step": "Distance sentinel 9999 -> missing",
+    "why": "9999 means 'no enemy found' (not a distance). It is set to missing and imputed with the TRAIN median inside each model pipeline.",
+    "rows_before": 45982,
+    "rows_after": 45982
+   },
+   {
+    "step": "Clip outliers",
+    "why": "Life is clipped to 0..12 and the time gap to 10 min (the game already caps it); long pauses are kept: they mark a new 'phrase' (gap > 4 s).",
+    "rows_before": 45982,
+    "rows_after": 45982
+   },
+   {
+    "step": "Sort chronologically per player",
+    "why": "Sequential features and the online models must only see the past.",
+    "rows_before": 45982,
+    "rows_after": 45982
+   },
+   {
+    "step": "Feature engineering",
+    "why": "prev1/prev2 (last two actions, 'start' after 4 s), is_start, Laplace-smoothed past frequency of each action (hist_*), log of history length, context (world, mode, difficulty, life, enemy distance, boss fight) for the next-action task; 8 in-game situation features + attack id/family for the hit task.",
+    "rows_before": 45982,
+    "rows_after": 45982
+   }
+  ],
+  "split": {
+   "group_by": "pid",
+   "groups": 48,
+   "train": 28,
+   "val": 10,
+   "test": 10,
+   "why": "Players are split as whole units: a model must work for a NEW player, and the same player's sequence in two partitions would leak his habits."
+  },
+  "rows": {
+   "actions": 36472,
+   "hits": 8513,
+   "dodges": 997
+  },
+  "split_rows": {
+   "actions": {
+    "train": 19369,
+    "val": 8978,
+    "test": 8125
+   },
+   "hits": {
+    "train": 4404,
+    "val": 2211,
+    "test": 1898
+   },
+   "dodges": {
+    "train": 538,
+    "val": 246,
+    "test": 213
+   }
+  }
+ },
+ "A": {
+  "candidates": {
+   "Majority class": {
+    "val": {
+     "accuracy": 0.32691022499443084,
+     "macro_f1": 0.08212317076583005,
+     "log_loss": 1.7150758664287293
+    },
+    "train": {
+     "accuracy": 0.25618255976044196,
+     "macro_f1": 0.06797912128560273,
+     "log_loss": 1.7531453031998203
+    },
+    "cv_acc_mean": null,
+    "cv_acc_std": null,
+    "params": {},
+    "features": "-"
+   },
+   "Global Markov-1 (table)": {
+    "val": {
+     "accuracy": 0.2891512586322121,
+     "macro_f1": 0.17957991309092783,
+     "log_loss": 1.698138210235063
+    },
+    "train": {
+     "accuracy": 0.30192575765398316,
+     "macro_f1": 0.2171744772992602,
+     "log_loss": 1.7016266060147835
+    },
+    "cv_acc_mean": null,
+    "cv_acc_std": null,
+    "params": {},
+    "features": "prev1"
+   },
+   "In-game Markov-2 (decay 0.97)": {
+    "val": {
+     "accuracy": 0.4694809534417465,
+     "macro_f1": 0.36701469946894166,
+     "log_loss": 1.5807641548890505
+    },
+    "train": {
+     "accuracy": 0.45428261655222263,
+     "macro_f1": 0.4223993664150661,
+     "log_loss": 1.6263013160288962
+    },
+    "cv_acc_mean": null,
+    "cv_acc_std": null,
+    "params": {
+     "order": 2,
+     "decay": 0.97
+    },
+    "features": "prev1, prev2 (own history)"
+   },
+   "Tuned online Markov-1 (decay 1.0)": {
+    "val": {
+     "accuracy": 0.4732679884161283,
+     "macro_f1": 0.35700887746205495,
+     "log_loss": 1.4613215754350992
+    },
+    "train": {
+     "accuracy": 0.4689968506376168,
+     "macro_f1": 0.4335134397641068,
+     "log_loss": 1.4901191217748297
+    },
+    "cv_acc_mean": null,
+    "cv_acc_std": null,
+    "params": {
+     "order": 1,
+     "decay": 1.0
+    },
+    "features": "prev1, prev2 (own history)"
+   },
+   "Logistic regression [seq]": {
+    "val": {
+     "accuracy": 0.35709512140788596,
+     "macro_f1": 0.23176905587698673,
+     "log_loss": 1.6643375157035323
+    },
+    "train": {
+     "accuracy": 0.34090557075739586,
+     "macro_f1": 0.2636798670802604,
+     "log_loss": 1.656418174767998
+    },
+    "cv_acc_mean": 0.32336588576210773,
+    "cv_acc_std": 0.0234339353587787,
+    "params": {
+     "clf__C": 0.1
+    },
+    "features": "seq"
+   },
+   "Logistic regression [seq+ctx]": {
+    "val": {
+     "accuracy": 0.33916239697037204,
+     "macro_f1": 0.23229610947763354,
+     "log_loss": 1.6689143562691062
+    },
+    "train": {
+     "accuracy": 0.35448396922918063,
+     "macro_f1": 0.2797934077061453,
+     "log_loss": 1.6302800722137532
+    },
+    "cv_acc_mean": 0.30975208833989454,
+    "cv_acc_std": 0.038020187366216186,
+    "params": {
+     "clf__C": 10.0
+    },
+    "features": "seq+ctx"
+   },
+   "Logistic regression [seq+ctx+hist]": {
+    "val": {
+     "accuracy": 0.4495433281354422,
+     "macro_f1": 0.3190570791706456,
+     "log_loss": 1.49673062456977
+    },
+    "train": {
+     "accuracy": 0.4445247560534875,
+     "macro_f1": 0.3748207420865874,
+     "log_loss": 1.4861872473209383
+    },
+    "cv_acc_mean": 0.43137748852328867,
+    "cv_acc_std": 0.027309437872345063,
+    "params": {
+     "clf__C": 0.1
+    },
+    "features": "seq+ctx+hist"
+   },
+   "Logistic regression [seq+ctx+hist+online]": {
+    "val": {
+     "accuracy": 0.47315660503452883,
+     "macro_f1": 0.3649596846128518,
+     "log_loss": 1.4291432099318961
+    },
+    "train": {
+     "accuracy": 0.47617326655996695,
+     "macro_f1": 0.4358273392940579,
+     "log_loss": 1.412873101993597
+    },
+    "cv_acc_mean": 0.4708771287787384,
+    "cv_acc_std": 0.01759355023007144,
+    "params": {
+     "clf__C": 0.1
+    },
+    "features": "seq+ctx+hist+online"
+   },
+   "Random forest": {
+    "val": {
+     "accuracy": 0.46959233682334595,
+     "macro_f1": 0.33741514851335946,
+     "log_loss": 1.4443733534568928
+    },
+    "train": {
+     "accuracy": 0.5349269451184883,
+     "macro_f1": 0.5002262805328369,
+     "log_loss": 1.2208793470775796
+    },
+    "cv_acc_mean": 0.4541619261818872,
+    "cv_acc_std": 0.018039405652207307,
+    "params": {
+     "clf__max_depth": 16,
+     "clf__min_samples_leaf": 20
+    },
+    "features": "seq+ctx+hist+online"
+   },
+   "Gradient boosting (HistGB)": {
+    "val": {
+     "accuracy": 0.47415905546892406,
+     "macro_f1": 0.3720102332862842,
+     "log_loss": 1.4126030826914975
+    },
+    "train": {
+     "accuracy": 0.49532758531674326,
+     "macro_f1": 0.463059835670155,
+     "log_loss": 1.3516157472491583
+    },
+    "cv_acc_mean": 0.4626805051196167,
+    "cv_acc_std": 0.014184797048904938,
+    "params": {
+     "clf__learning_rate": 0.05,
+     "clf__max_depth": 3,
+     "clf__max_iter": 150
+    },
+    "features": "seq+ctx+hist+online"
+   }
+  },
+  "markov_grid": [
+   {
+    "order": 1,
+    "decay": 0.85,
+    "train_acc": 0.4454
+   },
+   {
+    "order": 1,
+    "decay": 0.9,
+    "train_acc": 0.4566
+   },
+   {
+    "order": 1,
+    "decay": 0.95,
+    "train_acc": 0.4631
+   },
+   {
+    "order": 1,
+    "decay": 0.97,
+    "train_acc": 0.466
+   },
+   {
+    "order": 1,
+    "decay": 0.99,
+    "train_acc": 0.4664
+   },
+   {
+    "order": 1,
+    "decay": 1.0,
+    "train_acc": 0.469
+   },
+   {
+    "order": 2,
+    "decay": 0.85,
+    "train_acc": 0.4455
+   },
+   {
+    "order": 2,
+    "decay": 0.9,
+    "train_acc": 0.4509
+   },
+   {
+    "order": 2,
+    "decay": 0.95,
+    "train_acc": 0.454
+   },
+   {
+    "order": 2,
+    "decay": 0.97,
+    "train_acc": 0.4543
+   },
+   {
+    "order": 2,
+    "decay": 0.99,
+    "train_acc": 0.4553
+   },
+   {
+    "order": 2,
+    "decay": 1.0,
+    "train_acc": 0.4564
+   }
+  ],
+  "markov_best": {
+   "order": 1,
+   "decay": 1.0
+  },
+  "logged_game_acc_val": 0.4714876983214532,
+  "chosen": "Gradient boosting (HistGB)",
+  "best_global": "Gradient boosting (HistGB)",
+  "test": {
+   "Gradient boosting (HistGB)": {
+    "accuracy": 0.5490461538461539,
+    "macro_f1": 0.4095598608791701,
+    "log_loss": 1.2780031127823128
+   },
+   "In-game Markov-2 (decay 0.97)": {
+    "accuracy": 0.5313230769230769,
+    "macro_f1": 0.4066550231970223,
+    "log_loss": 1.4423292269316155
+   },
+   "Tuned online Markov-1 (decay 1.0)": {
+    "accuracy": 0.5373538461538462,
+    "macro_f1": 0.3849398609308212,
+    "log_loss": 1.3258907961414332
+   },
+   "Majority class": {
+    "accuracy": 0.36701538461538463,
+    "macro_f1": 0.08949311245160708,
+    "log_loss": 1.6654157001312897
+   }
+  },
+  "test_confusion": [
+   [
+    2426,
+    230,
+    128,
+    142,
+    9,
+    47
+   ],
+   [
+    460,
+    691,
+    84,
+    118,
+    13,
+    32
+   ],
+   [
+    358,
+    175,
+    485,
+    64,
+    8,
+    18
+   ],
+   [
+    408,
+    237,
+    23,
+    760,
+    13,
+    26
+   ],
+   [
+    262,
+    121,
+    39,
+    77,
+    18,
+    23
+   ],
+   [
+    291,
+    143,
+    36,
+    73,
+    6,
+    81
+   ]
+  ],
+  "test_recall": {
+   "shoot": 0.8135479543930249,
+   "melee": 0.49427753934191704,
+   "block": 0.43772563176895307,
+   "dodge": 0.5180640763462849,
+   "jump": 0.03333333333333333,
+   "hide": 0.12857142857142856
+  },
+  "test_segments": {
+   "diff=Easy": {
+    "n": 1424,
+    "accuracy": 0.4747191011235955
+   },
+   "diff=Normal": {
+    "n": 2884,
+    "accuracy": 0.651872399445215
+   },
+   "diff=Hard": {
+    "n": 2887,
+    "accuracy": 0.4156563907170073
+   },
+   "diff=Legendary": {
+    "n": 930,
+    "accuracy": 0.7580645161290323
+   },
+   "mode=Waves": {
+    "n": 1743,
+    "accuracy": 0.5714285714285714
+   },
+   "mode=Pantheon": {
+    "n": 399,
+    "accuracy": 0.631578947368421
+   },
+   "mode=Story": {
+    "n": 5983,
+    "accuracy": 0.5370215610897543
+   }
+  },
+  "by_experience": {
+   "bins": [
+    "1-10",
+    "11-25",
+    "26-50",
+    "51-100",
+    "101-200",
+    "201-400",
+    "400+"
+   ],
+   "chosen": [
+    0.5,
+    0.5666666666666667,
+    0.604,
+    0.566,
+    0.599,
+    0.5840040241448692,
+    0.515349286922891
+   ],
+   "in_game": [
+    0.48,
+    0.5066666666666667,
+    0.576,
+    0.524,
+    0.575,
+    0.5699195171026157,
+    0.5025380710659898
+   ],
+   "n": [
+    100,
+    150,
+    250,
+    500,
+    1000,
+    1988,
+    4137
+   ]
+  },
+  "importance": {
+   "hist_shoot": 0.0248384940966808,
+   "mk_melee": 0.020049008687903786,
+   "ne": 0.014776861958862445,
+   "mk_block": 0.011918021831142822,
+   "mk_shoot": 0.007091408628499329,
+   "mk_dodge": 0.007017153040766351,
+   "mk_jump": 0.006423108338902528,
+   "hist_block": 0.005903319224771682,
+   "hist_dodge": 0.005123635553575441,
+   "hist_melee": 0.004937996584242987,
+   "mk_hide": 0.003564268211182923,
+   "hp": 0.0014851117546595776,
+   "prev2": 0.0005569169079973624,
+   "mode": 0.0004455335263978862,
+   "diff": 0.00033415014479841004,
+   "log_hist": 0.00025989455706545056,
+   "is_start": 0.0,
+   "hist_hide": -7.425558773294094e-05,
+   "w": -7.425558773295944e-05,
+   "boss": -0.0007796836711962222,
+   "hist_jump": -0.0014479839607930238,
+   "prev1": -0.0015222395485260016
+  },
+  "learning_curve": {
+   "sizes": [
+    2262,
+    5655,
+    11311,
+    16967,
+    22623
+   ],
+   "train": [
+    0.6752431476569407,
+    0.559787798408488,
+    0.5107240739103528,
+    0.5013614663759063,
+    0.49554207245967213
+   ],
+   "val": [
+    0.2406845739610489,
+    0.3751846934851709,
+    0.4624800279566452,
+    0.47031738483570357,
+    0.4716977814365465
+   ]
+  },
+  "features": [
+   "prev1",
+   "prev2",
+   "mode",
+   "is_start",
+   "w",
+   "diff",
+   "hp",
+   "ne",
+   "boss",
+   "hist_shoot",
+   "hist_melee",
+   "hist_block",
+   "hist_dodge",
+   "hist_jump",
+   "hist_hide",
+   "log_hist",
+   "mk_shoot",
+   "mk_melee",
+   "mk_block",
+   "mk_dodge",
+   "mk_jump",
+   "mk_hide"
+  ]
+ },
+ "B": {
+  "candidates": {
+   "Constant hit rate": {
+    "val": {
+     "brier": 0.1910160647070929,
+     "roc_auc": 0.5,
+     "log_loss": 0.570158500743065
+    },
+    "train": {
+     "brier": 0.19926253979331812,
+     "roc_auc": 0.5,
+     "log_loss": 0.587926490848459
+    },
+    "cv_brier_mean": null,
+    "cv_brier_std": null,
+    "params": {},
+    "features": "-"
+   },
+   "In-game bandit (SGD, lr 0.3)": {
+    "val": {
+     "brier": 0.17815454466484587,
+     "roc_auc": 0.6807513399159789,
+     "log_loss": 0.5348390763769164
+    },
+    "train": {
+     "brier": 0.19778227643496785,
+     "roc_auc": 0.5900527590471805,
+     "log_loss": 0.5853879944230447
+    },
+    "cv_brier_mean": null,
+    "cv_brier_std": null,
+    "params": {
+     "lr": 0.3
+    },
+    "features": "8 situation features, own history"
+   },
+   "Tuned online bandit (lr 0.1)": {
+    "val": {
+     "brier": 0.1771444348538477,
+     "roc_auc": 0.6862043366504031,
+     "log_loss": 0.5329183719852342
+    },
+    "train": {
+     "brier": 0.19428113344522613,
+     "roc_auc": 0.5936959536734684,
+     "log_loss": 0.5759018876693895
+    },
+    "cv_brier_mean": null,
+    "cv_brier_std": null,
+    "params": {
+     "lr": 0.1
+    },
+    "features": "8 situation features, own history"
+   },
+   "Logistic regression [situation]": {
+    "val": {
+     "brier": 0.18432856843273912,
+     "roc_auc": 0.620075889236473,
+     "log_loss": 0.5537308852550566
+    },
+    "train": {
+     "brier": 0.1947508274848448,
+     "roc_auc": 0.5904482578388197,
+     "log_loss": 0.5771085659974436
+    },
+    "cv_brier_mean": 0.19745701437094026,
+    "cv_brier_std": 0.018402820988951487,
+    "params": {
+     "clf__C": 0.1
+    },
+    "features": "situation"
+   },
+   "Logistic regression [situation x attack]": {
+    "val": {
+     "brier": 0.17343713035931677,
+     "roc_auc": 0.6936570158386866,
+     "log_loss": 0.5222977306753512
+    },
+    "train": {
+     "brier": 0.1745556451016572,
+     "roc_auc": 0.7136485248684258,
+     "log_loss": 0.5251083457740292
+    },
+    "cv_brier_mean": 0.18591466616454427,
+    "cv_brier_std": 0.012957475720180215,
+    "params": {
+     "clf__C": 0.1
+    },
+    "features": "situation+attack"
+   },
+   "Decision tree": {
+    "val": {
+     "brier": 0.18334209630246048,
+     "roc_auc": 0.6164182082673566,
+     "log_loss": 0.5496576114019723
+    },
+    "train": {
+     "brier": 0.1901118365617205,
+     "roc_auc": 0.628217939628539,
+     "log_loss": 0.5631794563096072
+    },
+    "cv_brier_mean": 0.1992865998192207,
+    "cv_brier_std": 0.018434541742451196,
+    "params": {
+     "clf__max_depth": 4,
+     "clf__min_samples_leaf": 50
+    },
+    "features": "situation+attack"
+   },
+   "Random forest": {
+    "val": {
+     "brier": 0.17718934734913414,
+     "roc_auc": 0.6770233911353133,
+     "log_loss": 0.5337729020254866
+    },
+    "train": {
+     "brier": 0.17045925733400294,
+     "roc_auc": 0.7697858070659347,
+     "log_loss": 0.5154181697834701
+    },
+    "cv_brier_mean": 0.1904508533748557,
+    "cv_brier_std": 0.01740380004409603,
+    "params": {
+     "clf__max_depth": 12,
+     "clf__min_samples_leaf": 10
+    },
+    "features": "situation+attack"
+   },
+   "Gradient boosting (HistGB)": {
+    "val": {
+     "brier": 0.17519322861153117,
+     "roc_auc": 0.682795543197003,
+     "log_loss": 0.5282949674949731
+    },
+    "train": {
+     "brier": 0.17438182003133362,
+     "roc_auc": 0.7218206140645942,
+     "log_loss": 0.5251460471529557
+    },
+    "cv_brier_mean": 0.18964934190204777,
+    "cv_brier_std": 0.016177700428994534,
+    "params": {
+     "clf__learning_rate": 0.05,
+     "clf__max_depth": 3,
+     "clf__max_iter": 150
+    },
+    "features": "situation+attack"
+   }
+  },
+  "bandit_best_lr": 0.1,
+  "chosen": "Logistic regression [situation x attack]",
+  "test": {
+   "Logistic regression [situation x attack]": {
+    "brier": 0.18939634531853772,
+    "roc_auc": 0.6662870550375081,
+    "log_loss": 0.5649484962661269
+   },
+   "In-game bandit (SGD, lr 0.3)": {
+    "brier": 0.19641499323212575,
+    "roc_auc": 0.6415587553681065,
+    "log_loss": 0.5767843532035882
+   },
+   "Constant hit rate": {
+    "brier": 0.20235336689413516,
+    "roc_auc": 0.5,
+    "log_loss": 0.5946302593781253
+   }
+  },
+  "calibration": {
+   "chosen": [
+    [
+     0.1297071129707113,
+     0.19491525423728814,
+     0.18410041841004185,
+     0.225531914893617,
+     0.2911392405063291,
+     0.32489451476793246,
+     0.39915966386554624,
+     0.5021097046413502
+    ],
+    [
+     0.08212672469727532,
+     0.15090734029788108,
+     0.19634220290871707,
+     0.23735523043874743,
+     0.2740843878811503,
+     0.31902301789837045,
+     0.39789914536366594,
+     0.585276410195316
+    ]
+   ],
+   "in_game": [
+    [
+     0.10084033613445378,
+     0.14345991561181434,
+     0.2336065573770492,
+     0.3391304347826087,
+     0.33755274261603374,
+     0.29957805907172996,
+     0.38396624472573837,
+     0.41596638655462187
+    ],
+    [
+     0.10179364760084104,
+     0.15920268892162767,
+     0.20324879481732153,
+     0.24108062292154328,
+     0.27289916496121436,
+     0.32005334370580074,
+     0.3956509359565937,
+     0.5580464954213739
+    ]
+   ]
+  },
+  "test_segments": {
+   "diff=Easy": {
+    "n": 336,
+    "brier": 0.17328247395432247,
+    "hit_rate": 0.2708333333333333,
+    "mean_pred": 0.2800927270706018
+   },
+   "diff=Normal": {
+    "n": 666,
+    "brier": 0.20932882699879854,
+    "hit_rate": 0.3228228228228228,
+    "mean_pred": 0.2943677958407205
+   },
+   "diff=Hard": {
+    "n": 714,
+    "brier": 0.19399638049284032,
+    "hit_rate": 0.28291316526610644,
+    "mean_pred": 0.2780529295324474
+   },
+   "diff=Legendary": {
+    "n": 182,
+    "brier": 0.128158998422222,
+    "hit_rate": 0.14285714285714285,
+    "mean_pred": 0.23754805567042286
+   }
+  },
+  "features": [
+   "mv",
+   "family",
+   "mode",
+   "x_close",
+   "x_far",
+   "x_in_air",
+   "x_blocking",
+   "x_moving",
+   "x_low_hp",
+   "x_expects_evade",
+   "w",
+   "diff"
+  ]
+ },
+ "C": {
+  "candidates": {
+   "No movement (0, 0)": {
+    "val": {
+     "mean_error_px": 49.622076549402806
+    },
+    "train": {
+     "mean_error_px": 50.90407192085146
+    },
+    "params": {}
+   },
+   "Global mean (train)": {
+    "val": {
+     "mean_error_px": 40.51051475058708
+    },
+    "train": {
+     "mean_error_px": 42.43627211823482
+    },
+    "params": {}
+   },
+   "In-game running mean": {
+    "val": {
+     "mean_error_px": 33.01559388879679
+    },
+    "train": {
+     "mean_error_px": 36.05805351461556
+    },
+    "params": {}
+   },
+   "Per-player mean shrunk to global (k=0.5)": {
+    "val": {
+     "mean_error_px": 31.090561505391463
+    },
+    "train": {
+     "mean_error_px": 33.11845793639881
+    },
+    "params": {
+     "k": 0.5
+    }
+   }
+  },
+  "chosen": "Per-player mean shrunk to global (k=0.5)",
+  "test": {
+   "Per-player mean shrunk to global (k=0.5)": {
+    "mean_error_px": 31.868827308161286
+   },
+   "In-game running mean": {
+    "mean_error_px": 35.83298084900067
+   },
+   "Global mean (train)": {
+    "mean_error_px": 46.970900488136
+   },
+   "No movement (0, 0)": {
+    "mean_error_px": 57.39108715107584
+   }
+  }
+ },
+ "figures": {
+  "classes": "fig_classes.png",
+  "hit_by_move": "fig_hit_by_move.png",
+  "before_after": "fig_before_after.png",
+  "cmp_a": "fig_cmp_a.png",
+  "cmp_b": "fig_cmp_b.png",
+  "cmp_c": "fig_cmp_c.png",
+  "confusion": "fig_confusion.png",
+  "learning_curve": "fig_learning_curve.png",
+  "experience": "fig_experience.png",
+  "calibration": "fig_calibration.png",
+  "importance": "fig_importance.png"
+ },
+ "experiments": [
+  {
+   "id": "A01",
+   "task": "A",
+   "model": "Majority class",
+   "features": "-",
+   "params": "{}",
+   "metric": "accuracy",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.3269,
+   "train": 0.2562,
+   "gap_train_val": -0.0707,
+   "fit_s": 0.0,
+   "note": "lower bound"
+  },
+  {
+   "id": "A02",
+   "task": "A",
+   "model": "Global Markov-1 (table)",
+   "features": "prev1",
+   "params": "{}",
+   "metric": "accuracy",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.2892,
+   "train": 0.3019,
+   "gap_train_val": 0.0128,
+   "fit_s": 0.0,
+   "note": "same for every player"
+  },
+  {
+   "id": "A03",
+   "task": "A",
+   "model": "In-game Markov-2 (decay 0.97)",
+   "features": "prev1, prev2 (own history)",
+   "params": "{\"order\": 2, \"decay\": 0.97}",
+   "metric": "accuracy",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.4695,
+   "train": 0.4543,
+   "gap_train_val": -0.0152,
+   "fit_s": 0.68,
+   "note": "deployed baseline, prequential"
+  },
+  {
+   "id": "A04",
+   "task": "A",
+   "model": "Tuned online Markov-1 (decay 1.0)",
+   "features": "prev1, prev2 (own history)",
+   "params": "{\"order\": 1, \"decay\": 1.0}",
+   "metric": "accuracy",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.4733,
+   "train": 0.469,
+   "gap_train_val": -0.0043,
+   "fit_s": 0.0,
+   "note": "decay/order tuned prequentially on train players"
+  },
+  {
+   "id": "A05",
+   "task": "A",
+   "model": "Logistic regression [seq]",
+   "features": "seq",
+   "params": "{\"clf__C\": 0.1}",
+   "metric": "accuracy",
+   "cv_mean": 0.3234,
+   "cv_std": 0.0234,
+   "val": 0.3571,
+   "train": 0.3409,
+   "gap_train_val": -0.0162,
+   "fit_s": 13.82,
+   "note": ""
+  },
+  {
+   "id": "A06",
+   "task": "A",
+   "model": "Logistic regression [seq+ctx]",
+   "features": "seq+ctx",
+   "params": "{\"clf__C\": 10.0}",
+   "metric": "accuracy",
+   "cv_mean": 0.3098,
+   "cv_std": 0.038,
+   "val": 0.3392,
+   "train": 0.3545,
+   "gap_train_val": 0.0153,
+   "fit_s": 2.64,
+   "note": ""
+  },
+  {
+   "id": "A07",
+   "task": "A",
+   "model": "Logistic regression [seq+ctx+hist]",
+   "features": "seq+ctx+hist",
+   "params": "{\"clf__C\": 0.1}",
+   "metric": "accuracy",
+   "cv_mean": 0.4314,
+   "cv_std": 0.0273,
+   "val": 0.4495,
+   "train": 0.4445,
+   "gap_train_val": -0.005,
+   "fit_s": 3.11,
+   "note": ""
+  },
+  {
+   "id": "A08",
+   "task": "A",
+   "model": "Logistic regression [seq+ctx+hist+online]",
+   "features": "seq+ctx+hist+online",
+   "params": "{\"clf__C\": 0.1}",
+   "metric": "accuracy",
+   "cv_mean": 0.4709,
+   "cv_std": 0.0176,
+   "val": 0.4732,
+   "train": 0.4762,
+   "gap_train_val": 0.003,
+   "fit_s": 4.22,
+   "note": ""
+  },
+  {
+   "id": "A09",
+   "task": "A",
+   "model": "Random forest",
+   "features": "seq+ctx+hist+online",
+   "params": "{\"clf__max_depth\": 16, \"clf__min_samples_leaf\": 20}",
+   "metric": "accuracy",
+   "cv_mean": 0.4542,
+   "cv_std": 0.018,
+   "val": 0.4696,
+   "train": 0.5349,
+   "gap_train_val": 0.0653,
+   "fit_s": 36.04,
+   "note": ""
+  },
+  {
+   "id": "A10",
+   "task": "A",
+   "model": "Gradient boosting (HistGB)",
+   "features": "seq+ctx+hist+online",
+   "params": "{\"clf__learning_rate\": 0.05, \"clf__max_depth\": 3, \"clf__max_iter\": 150}",
+   "metric": "accuracy",
+   "cv_mean": 0.4627,
+   "cv_std": 0.0142,
+   "val": 0.4742,
+   "train": 0.4953,
+   "gap_train_val": 0.0212,
+   "fit_s": 36.45,
+   "note": ""
+  },
+  {
+   "id": "B01",
+   "task": "B",
+   "model": "Constant hit rate",
+   "features": "-",
+   "params": "{}",
+   "metric": "brier (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.191,
+   "train": 0.1993,
+   "gap_train_val": 0.0082,
+   "fit_s": 0.0,
+   "note": "lower bound"
+  },
+  {
+   "id": "B02",
+   "task": "B",
+   "model": "In-game bandit (SGD, lr 0.3)",
+   "features": "8 situation features, own history",
+   "params": "{\"lr\": 0.3}",
+   "metric": "brier (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.1782,
+   "train": 0.1978,
+   "gap_train_val": 0.0196,
+   "fit_s": 0.0,
+   "note": "deployed baseline, prequential"
+  },
+  {
+   "id": "B03",
+   "task": "B",
+   "model": "Tuned online bandit (lr 0.1)",
+   "features": "8 situation features, own history",
+   "params": "{\"lr\": 0.1}",
+   "metric": "brier (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 0.1771,
+   "train": 0.1943,
+   "gap_train_val": 0.0171,
+   "fit_s": 0.0,
+   "note": "lr tuned on train players"
+  },
+  {
+   "id": "B04",
+   "task": "B",
+   "model": "Logistic regression [situation]",
+   "features": "situation",
+   "params": "{\"clf__C\": 0.1}",
+   "metric": "brier (lower=better)",
+   "cv_mean": 0.1975,
+   "cv_std": 0.0184,
+   "val": 0.1843,
+   "train": 0.1948,
+   "gap_train_val": 0.0104,
+   "fit_s": 0.56,
+   "note": ""
+  },
+  {
+   "id": "B05",
+   "task": "B",
+   "model": "Logistic regression [situation x attack]",
+   "features": "situation+attack",
+   "params": "{\"clf__C\": 0.1}",
+   "metric": "brier (lower=better)",
+   "cv_mean": 0.1859,
+   "cv_std": 0.013,
+   "val": 0.1734,
+   "train": 0.1746,
+   "gap_train_val": 0.0011,
+   "fit_s": 2.75,
+   "note": ""
+  },
+  {
+   "id": "B06",
+   "task": "B",
+   "model": "Decision tree",
+   "features": "situation+attack",
+   "params": "{\"clf__max_depth\": 4, \"clf__min_samples_leaf\": 50}",
+   "metric": "brier (lower=better)",
+   "cv_mean": 0.1993,
+   "cv_std": 0.0184,
+   "val": 0.1833,
+   "train": 0.1901,
+   "gap_train_val": 0.0068,
+   "fit_s": 0.92,
+   "note": ""
+  },
+  {
+   "id": "B07",
+   "task": "B",
+   "model": "Random forest",
+   "features": "situation+attack",
+   "params": "{\"clf__max_depth\": 12, \"clf__min_samples_leaf\": 10}",
+   "metric": "brier (lower=better)",
+   "cv_mean": 0.1905,
+   "cv_std": 0.0174,
+   "val": 0.1772,
+   "train": 0.1705,
+   "gap_train_val": -0.0067,
+   "fit_s": 10.1,
+   "note": ""
+  },
+  {
+   "id": "B08",
+   "task": "B",
+   "model": "Gradient boosting (HistGB)",
+   "features": "situation+attack",
+   "params": "{\"clf__learning_rate\": 0.05, \"clf__max_depth\": 3, \"clf__max_iter\": 150}",
+   "metric": "brier (lower=better)",
+   "cv_mean": 0.1896,
+   "cv_std": 0.0162,
+   "val": 0.1752,
+   "train": 0.1744,
+   "gap_train_val": -0.0008,
+   "fit_s": 5.07,
+   "note": ""
+  },
+  {
+   "id": "C01",
+   "task": "C",
+   "model": "No movement (0, 0)",
+   "features": "own dodge history",
+   "params": "{}",
+   "metric": "mean error px (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 49.6221,
+   "train": 50.9041,
+   "gap_train_val": 1.282,
+   "fit_s": 0,
+   "note": "lower bound"
+  },
+  {
+   "id": "C02",
+   "task": "C",
+   "model": "Global mean (train)",
+   "features": "own dodge history",
+   "params": "{}",
+   "metric": "mean error px (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 40.5105,
+   "train": 42.4363,
+   "gap_train_val": 1.9258,
+   "fit_s": 0,
+   "note": ""
+  },
+  {
+   "id": "C03",
+   "task": "C",
+   "model": "In-game running mean",
+   "features": "own dodge history",
+   "params": "{}",
+   "metric": "mean error px (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 33.0156,
+   "train": 36.0581,
+   "gap_train_val": 3.0425,
+   "fit_s": 0,
+   "note": "deployed baseline, prequential"
+  },
+  {
+   "id": "C04",
+   "task": "C",
+   "model": "Per-player mean shrunk to global (k=0.5)",
+   "features": "own dodge history",
+   "params": "{\"k\": 0.5}",
+   "metric": "mean error px (lower=better)",
+   "cv_mean": null,
+   "cv_std": null,
+   "val": 31.0906,
+   "train": 33.1185,
+   "gap_train_val": 2.0279,
+   "fit_s": 0,
+   "note": "k tuned on train players"
+  }
+ ]
+}

@@ -1,0 +1,25 @@
+{
+  "expert": "J.A - creator and lead developer of UMBRAL (game design, bosses and the in-game ML)",
+  "date": "2026-11-14",
+  "method": "Structured interview: the results of Phase 4 were explained in plain language and the expert answered four questions (answers recorded verbatim, in Spanish, and translated).",
+  "data_shown": "First run of the pipeline (SIMULATED players while the real log fills up); to be repeated with the REAL data run.",
+  "answers": [
+    {"question": "With ~50% accuracy (in-game model ~53%, new hybrid ~55%, majority class 37%), is the next-action prediction useful in practice for the bosses?",
+     "answer_es": "Sí, se nota en la pelea",
+     "answer_en": "Yes, it shows in the fight: at ~50% the boss can already feint or wait for your dodge sometimes, and it feels like it knows you."},
+    {"question": "Which model would you put in the game for the next action?",
+     "answer_es": "El que gane en los datos",
+     "answer_en": "The one that wins on the data (best result with the real plays), even if it is heavier."},
+    {"question": "Who is responsible for monitoring?",
+     "answer_es": "J.A modelo, J.P juego, J.Q web",
+     "answer_en": "J.A: model and data. J.P: integration in the game. J.Q: website and reports."},
+    {"question": "What risks do you see in bosses using this?",
+     "answer_es": "Que se sienta injusto; demasiado difícil",
+     "answer_en": "That it feels unfair (the boss 'reads your mind') and that it becomes too hard for players who repeat patterns."}
+  ],
+  "consequences": [
+    "Selection criterion kept as fixed in Phase 1: best validation score wins (no extra weight to simplicity).",
+    "Fairness controls kept/added: bosses only use a prediction above a reliability threshold, never more than 60% of the time (guardian.gd caps the wait-for-dodge at 60%), and the boss telegraph still always happens.",
+    "Difficulty risk: accuracy and hit rate are monitored per difficulty (Phase 4 segments, Phase 6 indicators); Story mode and Easy keep adaptive level capped (adapt_level never rises in Story mode)."
+  ]
+}

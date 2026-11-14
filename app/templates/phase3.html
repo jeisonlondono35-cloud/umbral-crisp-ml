@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block body %}
+{% set A = R.A %}{% set B = R.B %}{% set C = R.C %}
+<p class="tag">Phase 3</p>
+<h1>Model Engineering</h1>
+<p class="lead">Several suitable algorithms per task, the same protocol for all of them, a hyper-parameter search with
+cross-validation grouped by player, and every run written to the experiment log. Code: <code>src/umbral_ml/train.py</code>.</p>
+
+<h2>3.1 Candidates and why each one</h2>
+<h3>Task 1 · next action (multiclass)</h3>
+<div class="scroll"><table>
+<tr><th>Candidate</th><th>Why it is a sensible choice here</th></tr>
+<tr><td>Majority class</td><td>Lower bound: any useful model must beat it.</td></tr>
+<tr><td>Global Markov-1 table</td><td>The simplest sequence model, the same for everybody.</td></tr>
+<tr><td>In-game Markov-2 with decay 0.97</td><td>The deployed model: learns each player online, forgets slowly. Exact replica in <code>online.py</code>.</td></tr>
+<tr><td>Tuned online Markov</td><td>Same idea with order and decay chosen by data (domain-guided tuning of the existing model).</td></tr>
+<tr><td>Multinomial logistic regression</td><td>Linear, calibrated probabilities, tiny, easy to port to GDScript.</td></tr>
+<tr><td>Random forest</td><td>Non-linear interactions (life × distance × last action), robust.</td></tr>
+<tr><td>Gradient boosting (HistGB)</td><td>Strong on tabular data, handles missing values, good probabilities.</td></tr>
+</table></div>
+<h3>Task 2 · will the attack hit (binary, probabilistic)</h3>
+<p>Constant rate · in-game bandit (per-attack logistic regression trained by SGD, lr 0.3) · tuned bandit (learning rate) ·
+logistic regression on the situation · logistic regression with attack × situation interactions · decision tree · random forest · HistGB.</p>
+<h3>Task 3 · dodge (2D regression)</h3>
+<p>No movement · global mean · in-game running mean (weight 1/min(n,8)) · per-player mean shrunk towards the global mean (k tuned).</p>
+
+<h2>3.2 Training configuration</h2>
+<div class="scroll"><table>
+<tr><th>Item</th><th>Value</th></tr>
+<tr><td>Feature sets compared (task 1)</td><td><code>seq</code> = prev1, prev2, is_start · <code>+ctx</code> = world, mode, difficulty, life, distance, boss · <code>+hist</code> = the player's past action frequencies · <code>+online</code> = the player's online Markov probabilities</td></tr>
+<tr><td>Features task 2</td><td>{{ B.features|join(', ') }}</td></tr>
+<tr><td>Hyper-parameter search</td><td>GridSearchCV, GroupKFold(5) by player, on TRAIN only; scoring accuracy (task 1) and Brier (task 2)</td></tr>
+<tr><td>Online models</td><td>order ∈ {1,2} × decay ∈ {0.85…1.0}; learning rate ∈ {0.03…0.6}; k ∈ {0.5…16} — scored prequentially on training players</td></tr>
+<tr><td>Random seed</td><td>42 (simulation, split, models)</td></tr>
+<tr><td>Library</td><td>scikit-learn {{ R.sklearn }}</td></tr>
+</table></div>
+
+<h3>Tuning the in-game Markov (prequential accuracy on training players)</h3>
+<div class="scroll"><table><tr><th>order</th>{% for g in A.markov_grid if g.order == 1 %}<th class="r">decay {{ g.decay }}</th>{% endfor %}</tr>
+{% for o in [1, 2] %}<tr><td>{{ o }}</td>{% for g in A.markov_grid if g.order == o %}<td class="r">{{ g.train_acc|pct }}</td>{% endfor %}</tr>{% endfor %}
+</table></div>
+<p>Best: order {{ A.markov_best.order }}, decay {{ A.markov_best.decay }}. In-game bandit best learning rate: {{ B.bandit_best_lr }}.</p>
+
+<h2>3.3 Experiment log</h2>
+<p>All {{ exps|length }} runs (<a href="{{ url_for('experiments_csv') }}">download experiments.csv</a>). <i>cv</i> = mean ± sd over the 5 grouped folds; <i>val</i> = validation players; <i>gap</i> = train − validation (over-fitting signal).</p>
+<div class="scroll"><table>
+<tr><th>id</th><th>model</th><th>features</th><th>best params</th><th>metric</th><th class="r">cv</th><th class="r">val</th><th class="r">train</th><th class="r">gap</th><th class="r">fit s</th></tr>
+{% for e in exps %}<tr class="{{ 'chosen' if e.model in (A.chosen, B.chosen, C.chosen) and ((e.task=='A' and e.model==A.chosen) or (e.task=='B' and e.model==B.chosen) or (e.task=='C' and e.model==C.chosen)) }}">
+<td>{{ e.id }}</td><td>{{ e.model }}</td><td>{{ e.features }}</td><td><code>{{ e.params }}</code></td><td>{{ e.metric }}</td>
+<td class="r">{% if e.cv_mean is not none %}{{ e.cv_mean|num }} ± {{ e.cv_std|num }}{% else %}-{% endif %}</td><td class="r">{{ e.val|num }}</td>
+<td class="r">{{ e.train|num if e.train is not none else '-' }}</td><td class="r">{{ e.gap_train_val|num if e.gap_train_val is not none else '-' }}</td><td class="r">{{ e.fit_s }}</td></tr>{% endfor %}
+</table></div>
+
+<h2>3.4 How domain knowledge guided the decisions</h2>
+<ul>
+<li><b>Split by player</b>, because the model must serve someone it has never seen (a new player opening the game).</li>
+<li><b>The 4-second phrase rule and the order-2 context</b> come from how combat works in the game (actions come in bursts).</li>
+<li><b>Personal history features</b> (hist_*, mk_*), because each player has a style (archer, brawler, turtle) that the bosses must learn quickly.</li>
+<li><b>One slope per attack</b> for the hit task: a feint beats a shield, ground waves are jumped — the effect of a situation depends on the attack.</li>
+<li><b>Brier score</b> for the hit task, because the boss compares probabilities between attacks: a well-calibrated 30% matters more than ranking.</li>
+<li><b>Prequential evaluation</b> of the online models, because in the game they predict first and learn afterwards.</li>
+</ul>
+{% endblock %}

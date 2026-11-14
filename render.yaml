@@ -1,0 +1,12 @@
+# Render Blueprint: New + → Blueprint → this repository. Free web service running the Flask app.
+services:
+  - type: web
+    name: umbral-crisp-ml
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app.app:app --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.7

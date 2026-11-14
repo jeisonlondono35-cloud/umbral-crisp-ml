@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block body %}
+{% set A = R.A %}{% set B = R.B %}{% set C = R.C %}
+{% set ig = 'In-game Markov-2 (decay 0.97)' %}{% set ib = 'In-game bandit (SGD, lr 0.3)' %}
+<p class="tag">Phase 4</p>
+<h1>Model Evaluation</h1>
+<p class="lead">Which model is best, measured the same way for all of them, checked for over-fitting and bias, reviewed by the
+domain expert, and finally measured once on players that were never used to choose or tune anything.</p>
+
+<h2>4.1 Metrics and why</h2>
+<div class="scroll"><table>
+<tr><th>Task</th><th>Main metric (selection)</th><th>Also reported</th><th>Why</th></tr>
+<tr><td>Next action</td><td>Accuracy</td><td>Macro-F1, log loss</td><td>The boss acts on the single most likely action, so "how often it is right" is the business number (the game shows it to players). Classes are unbalanced → macro-F1. The boss also weighs the probability → log loss.</td></tr>
+<tr><td>Hit</td><td>Brier score</td><td>ROC-AUC, log loss</td><td>The boss picks the attack with the highest probability: the probabilities must be calibrated (Brier), and rank well (AUC).</td></tr>
+<tr><td>Dodge</td><td>Mean Euclidean error (px)</td><td>-</td><td>Directly the miss distance of the boss aim.</td></tr>
+</table></div>
+
+<h2>4.2 Validation adapted to the structure of the data</h2>
+<p>The data are <b>sequences grouped by player</b>, so random K-fold would put the same player in training and validation and
+overestimate the score. We use <b>GroupKFold(5) by player</b> for the hyper-parameters, a separate set of <b>validation
+players</b> to choose, and <b>prequential (predict-then-learn) evaluation</b> for the online models, which is how they work in the game.</p>
+
+<h2>4.3 Comparison</h2>
+<div class="two">
+<figure><img src="{{ url_for('figure', name='fig_cmp_a.png') }}" alt="comparison next action"><figcaption>Blue = chosen, dark gray = baselines.</figcaption></figure>
+<figure><img src="{{ url_for('figure', name='fig_cmp_b.png') }}" alt="comparison hit"><figcaption>Brier score: lower is better.</figcaption></figure>
+</div>
+<h3>Next action — validation players</h3>
+<div class="scroll"><table>
+<tr><th>Model</th><th class="r">CV accuracy (train, 5 folds)</th><th class="r">val accuracy</th><th class="r">val macro-F1</th><th class="r">val log loss</th><th class="r">train accuracy</th></tr>
+{% for k, v in A.candidates.items() %}<tr class="{{ 'chosen' if k == A.chosen }}"><td>{{ k }}</td>
+<td class="r">{% if v.cv_acc_mean %}{{ v.cv_acc_mean|pct }} ± {{ v.cv_acc_std|pct }}{% else %}-{% endif %}</td>
+<td class="r">{{ v.val.accuracy|pct }}</td><td class="r">{{ v.val.macro_f1|num }}</td><td class="r">{{ v.val.log_loss|num }}</td>
+<td class="r">{{ v.train.accuracy|pct if v.train else '-' }}</td></tr>{% endfor %}
+</table></div>
+<h3>Hit — validation players</h3>
+<div class="scroll"><table>
+<tr><th>Model</th><th class="r">CV Brier</th><th class="r">val Brier</th><th class="r">val ROC-AUC</th><th class="r">val log loss</th><th class="r">train Brier</th></tr>
+{% for k, v in B.candidates.items() %}<tr class="{{ 'chosen' if k == B.chosen }}"><td>{{ k }}</td>
+<td class="r">{% if v.cv_brier_mean %}{{ v.cv_brier_mean|num }} ± {{ v.cv_brier_std|num }}{% else %}-{% endif %}</td>
+<td class="r">{{ v.val.brier|num }}</td><td class="r">{{ v.val.roc_auc|num }}</td><td class="r">{{ v.val.log_loss|num }}</td>
+<td class="r">{{ v.train.brier|num if v.train else '-' }}</td></tr>{% endfor %}
+</table></div>
+<h3>Dodge — validation players</h3>
+<div class="two"><div class="scroll"><table>
+<tr><th>Model</th><th class="r">val error (px)</th><th class="r">train error (px)</th></tr>
+{% for k, v in C.candidates.items() %}<tr class="{{ 'chosen' if k == C.chosen }}"><td>{{ k }}</td><td class="r">{{ v.val.mean_error_px|num(1) }}</td><td class="r">{{ v.train.mean_error_px|num(1) if v.train else '-' }}</td></tr>{% endfor %}
+</table></div>
+<figure><img src="{{ url_for('figure', name='fig_cmp_c.png') }}" alt="dodge comparison"></figure></div>
+
+<h2>4.4 Over-fitting, under-fitting, bias and risks</h2>
+<div class="two">
+<figure><img src="{{ url_for('figure', name='fig_learning_curve.png') }}" alt="learning curve"><figcaption>Learning curve (grouped CV). A large and persistent gap between the curves means over-fitting; both low and flat means under-fitting.</figcaption></figure>
+<figure><img src="{{ url_for('figure', name='fig_experience.png') }}" alt="experience"><figcaption>Accuracy on TEST players by how many of their actions were already seen: the cold start of a new player.</figcaption></figure>
+</div>
+<ul>
+{% set gaps = exps|selectattr('task', 'equalto', 'A')|selectattr('gap_train_val')|list %}
+{% set worst = gaps|sort(attribute='gap_train_val')|last %}{% set best = gaps|sort(attribute='gap_train_val')|first %}
+{% set lc = A.learning_curve %}
+<li><b>Over-fitting:</b> the train − validation gap of every run is in the experiment log (Phase 3). Largest gap (next action):
+<b>{{ worst.model }}</b> ({{ (worst.gap_train_val*100)|round(1) }} points); smallest: {{ best.model }} ({{ (best.gap_train_val*100)|round(1) }} points).
+Chosen model gap: {{ ((A.candidates[A.chosen].train.accuracy - A.candidates[A.chosen].val.accuracy)*100)|round(1) }} points.
+Learning curve of the best global model: cross-validation accuracy goes from {{ lc.val[0]|pct }} with {{ '{:,}'.format(lc.sizes[0]) }} rows to
+{{ lc.val[-1]|pct }} with {{ '{:,}'.format(lc.sizes[-1]) }} rows (training score {{ lc.train[-1]|pct }}){% if lc.val[-1] - lc.val[-2] > 0.003 %} — still rising, so more real players should help{% else %} — almost flat, so more of the same data would help little{% endif %}.</li>
+{% set lseq = A.candidates['Logistic regression [seq]'].val.accuracy %}{% set lh = A.candidates['Logistic regression [seq+ctx+hist]'].val.accuracy %}
+<li><b>Under-fitting:</b> a global model without the player's own history (<code>seq</code>) reaches {{ lseq|pct }} on validation
+against {{ A.candidates['Majority class'].val.accuracy|pct }} for the majority class; adding the personal history (<code>+hist</code>) gives {{ lh|pct }}:
+one model for everybody under-fits because players differ, and the personal features fix it.</li>
+<li><b>Bias across groups (test):</b>
+{% for k, v in A.test_segments.items() %}{{ k }} {{ v.accuracy|pct }} (n={{ v.n }}){{ ', ' if not loop.last }}{% endfor %}.
+Hit task: {% for k, v in B.test_segments.items() %}{{ k }}: Brier {{ v.brier|num }}, real hit rate {{ v.hit_rate|pct }} vs predicted {{ v.mean_pred|pct }}{{ '; ' if not loop.last }}{% endfor %}.</li>
+<li><b>Per action (test recall):</b> {% for a, r in A.test_recall.items() %}{{ a }} {{ r|pct(0) }}{{ ', ' if not loop.last }}{% endfor %} — rare actions (hide, jump) are predicted worse; the bosses only react to confident predictions.</li>
+<li><b>Risks:</b> trained on {{ R.source }} data (to be confirmed on real data); real players are friends of the team; a model that is "too right" can feel unfair (expert).</li>
+</ul>
+<div class="two">
+<figure><img src="{{ url_for('figure', name='fig_confusion.png') }}" alt="confusion matrix"></figure>
+<figure><img src="{{ url_for('figure', name='fig_calibration.png') }}" alt="calibration"><figcaption>Calibration: points on the diagonal = the predicted probability is the real frequency.</figcaption></figure>
+</div>
+<figure><img src="{{ url_for('figure', name='fig_importance.png') }}" alt="importance"><figcaption>What the best global next-action model relies on.</figcaption></figure>
+
+<h2>4.5 Review with the domain expert</h2>
+<p><b>{{ E.expert }}</b> · {{ E.date }} · {{ E.method }} <span class="tag sim">{{ E.data_shown }}</span></p>
+<div class="scroll"><table><tr><th>Question</th><th>Answer (original)</th><th>Answer (English)</th></tr>
+{% for q in E.answers %}<tr><td>{{ q.question }}</td><td><i>"{{ q.answer_es }}"</i></td><td>{{ q.answer_en }}</td></tr>{% endfor %}</table></div>
+<h3>What changed because of the review</h3>
+<ul class="tight">{% for c in E.consequences %}<li>{{ c }}</li>{% endfor %}</ul>
+
+<h2>4.6 Selection and final result on the independent TEST players</h2>
+<p>Rule (fixed in Phase 1): the best <b>validation</b> score wins, provided its log loss is not worse than the majority class.
+Chosen: <b>{{ A.chosen }}</b> (next action), <b>{{ B.chosen }}</b> (hit), <b>{{ C.chosen }}</b> (dodge).
+They were refitted on train + validation and measured <b>once</b> on the {{ D.split.test }} test {{ D.split.group_by == 'pid' and 'players' or 'sessions' }}.</p>
+<div class="scroll"><table>
+<tr><th>Task</th><th>Model</th><th class="r">Test result</th></tr>
+{% for k, v in A.test.items() %}<tr class="{{ 'chosen' if k == A.chosen }}"><td>Next action</td><td>{{ k }}</td><td class="r">accuracy {{ v.accuracy|pct }} · macro-F1 {{ v.macro_f1|num }} · log loss {{ v.log_loss|num }}</td></tr>{% endfor %}
+{% for k, v in B.test.items() %}<tr class="{{ 'chosen' if k == B.chosen }}"><td>Hit</td><td>{{ k }}</td><td class="r">Brier {{ v.brier|num }} · AUC {{ v.roc_auc|num }} · log loss {{ v.log_loss|num }}</td></tr>{% endfor %}
+{% for k, v in C.test.items() %}<tr class="{{ 'chosen' if loop.first }}"><td>Dodge</td><td>{{ k }}</td><td class="r">{{ v.mean_error_px|num(1) }} px</td></tr>{% endfor %}
+</table></div>
+
+<h3>Success criteria</h3>
+{% set at = A.test[A.chosen] %}{% set bt = B.test[B.chosen] %}{% set ck = C.test.keys()|list %}
+{% set crit = [
+ ('S1', 'accuracy ≥ majority + 10 points', at.accuracy - A.test['Majority class'].accuracy >= 0.10, (at.accuracy|pct) ~ ' vs ' ~ (A.test['Majority class'].accuracy|pct)),
+ ('S2', 'accuracy ≥ in-game model', at.accuracy >= A.test[ig].accuracy, (at.accuracy|pct) ~ ' vs ' ~ (A.test[ig].accuracy|pct)),
+ ('S3', 'Brier below in-game bandit and constant', bt.brier < B.test[ib].brier and bt.brier < B.test['Constant hit rate'].brier, (bt.brier|num) ~ ' vs ' ~ (B.test[ib].brier|num) ~ ' / ' ~ (B.test['Constant hit rate'].brier|num)),
+ ('S4', 'dodge error below in-game mean', C.test[ck[0]].mean_error_px < C.test['In-game running mean'].mean_error_px, (C.test[ck[0]].mean_error_px|num(1)) ~ ' vs ' ~ (C.test['In-game running mean'].mean_error_px|num(1)) ~ ' px'),
+ ('S5', 'latency < 50 ms', R.serving.next_ms < 50 and R.serving.hit_ms < 50, (R.serving.next_ms|num(2)) ~ ' ms / ' ~ (R.serving.hit_ms|num(2)) ~ ' ms')] %}
+<div class="scroll"><table><tr><th>#</th><th>Criterion</th><th>Result</th><th>Met?</th></tr>
+{% for c in crit %}<tr><td>{{ c[0] }}</td><td>{{ c[1] }}</td><td>{{ c[3] }}</td><td>{% if c[2] %}<span class="tag ok">yes</span>{% else %}<span class="tag bad">no</span>{% endif %}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

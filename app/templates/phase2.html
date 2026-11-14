@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block body %}
+{% set b = D.before %}{% set a = D.after %}
+<p class="tag">Phase 2</p>
+<h1>Data Engineering</h1>
+<p class="lead">From the raw export (one JSON batch per upload) to three clean tables, with every transformation
+documented, evidence before and after, and a split that keeps each player in a single partition.
+Code: <code>src/umbral_ml/prepare.py</code>.</p>
+
+<h2>2.1 Selected sources and variables (and why)</h2>
+<ul>
+<li><b>Gameplay log</b> (real when available, simulated now — same format): it is the only source with the sequence of actions, needed for a sequential target.</li>
+<li><b>Kept:</b> action, time gap, distance to enemy, world, mode, difficulty, life, boss scene, attack id and its 8 situation features, hit outcome, dodge offset.</li>
+<li><b>Not used as features:</b> <code>p/pp</code> (what the in-game model predicted) — kept only to measure the deployed model; <code>ver</code>, ids and timestamps — used for ordering and grouping, never as inputs.</li>
+<li><b>Aggregate accuracy per account</b> (REAL): not row-level, used as production evidence in Phases 1, 4 and 6.</li>
+</ul>
+
+<h2>2.2 Problems found (BEFORE cleaning)</h2>
+<div class="scroll"><table>
+<tr><th>Check</th><th class="r">Before</th><th class="r">After</th><th>Decision</th></tr>
+<tr><td>Events</td><td class="r">{{ '{:,}'.format(b.events) }}</td><td class="r">{{ '{:,}'.format(a.events) }}</td><td></td></tr>
+<tr><td>Duplicated events (same player, session, kind, time)</td><td class="r">{{ b.duplicate_events }}</td><td class="r">{{ a.duplicate_events }}</td><td>removed: a batch re-uploaded after a lost answer</td></tr>
+<tr><td>Distance = 9999 ("no enemy found")</td><td class="r">{{ b.ne_sentinel_9999 }}</td><td class="r">{{ a.ne_sentinel_9999 }}</td><td>set to missing, imputed with the TRAIN median inside each model</td></tr>
+<tr><td>Unknown action names</td><td class="r">{{ b.invalid_action }}</td><td class="r">{{ a.invalid_action }}</td><td>would be removed (inconsistent)</td></tr>
+<tr><td>Gaps of 10 min or more</td><td class="r">{{ b.gap_over_10min }}</td><td class="r">{{ a.gap_over_10min }}</td><td>kept, clipped to 10 min; a gap &gt; 4 s starts a new phrase</td></tr>
+<tr><td>Missing values in the targets</td><td class="r">{{ b.missing.a + b.missing.y }}</td><td class="r">{{ a.missing.a + a.missing.y }}</td><td>none</td></tr>
+</table></div>
+<figure><img src="{{ url_for('figure', name='fig_before_after.png') }}" alt="before and after"><figcaption>Evidence before / after cleaning.</figcaption></figure>
+
+<h2>2.3 Every transformation, in order</h2>
+<div class="scroll"><table>
+<tr><th>#</th><th>Step</th><th>Why</th><th class="r">Rows before</th><th class="r">Rows after</th></tr>
+{% for t in D.transformations %}<tr><td>{{ loop.index }}</td><td><b>{{ t.step }}</b></td><td>{{ t.why }}</td><td class="r">{{ '{:,}'.format(t.rows_before) }}</td><td class="r">{{ '{:,}'.format(t.rows_after) }}</td></tr>{% endfor %}
+<tr><td>{{ D.transformations|length + 1 }}</td><td><b>Encoding and scaling</b></td><td>Inside each sklearn Pipeline (fitted on training only): one-hot for categories (prev1, prev2, mode, attack, family; unknown categories ignored), median imputation + standard scaling for numbers. Trees receive the same input.</td><td class="r">-</td><td class="r">-</td></tr>
+</table></div>
+
+<h3>Engineered features (domain knowledge)</h3>
+<ul class="tight">
+<li><b>prev1, prev2</b>: the last two actions, reset to "start" after 4 s (the same "phrase" rule as the game).</li>
+<li><b>hist_*</b>: how often THIS player did each action before now (Laplace-smoothed) and <b>log_hist</b> — personalises a global model.</li>
+<li><b>mk_*</b>: the probabilities of the player's own online Markov chain at that moment (stacking: the global model can learn when to trust it).</li>
+<li><b>boss</b>: the action happens in a boss arena. <b>family</b>: attack family (guardian / wolf / mirror).</li>
+<li><b>attack × situation</b> products for the pooled logistic regression (one slope per attack, like the in-game bandit; attack list fixed from the game code).</li>
+</ul>
+<p>Every sequential feature uses only <b>earlier</b> events of the same player.</p>
+
+<h3>Sample: raw rows → processed rows</h3>
+<p>Files: <code>data/processed/sample_raw.csv</code> and <code>data/processed/sample_actions.csv</code> (first 25 rows of each, in the repository).</p>
+
+<h2>2.4 Train / validation / test split without leakage</h2>
+<div class="scroll"><table>
+<tr><th>Partition</th><th class="r">Groups ({{ D.split.group_by == 'pid' and 'players' or 'sessions' }})</th><th class="r">Actions</th><th class="r">Attacks</th><th class="r">Dodges</th><th>Used for</th></tr>
+<tr><td>train</td><td class="r">{{ D.split.train }}</td><td class="r">{{ '{:,}'.format(D.split_rows.actions.train) }}</td><td class="r">{{ '{:,}'.format(D.split_rows.hits.train) }}</td><td class="r">{{ D.split_rows.dodges.train }}</td><td>fitting + 5-fold GroupKFold for hyper-parameters</td></tr>
+<tr><td>validation</td><td class="r">{{ D.split.val }}</td><td class="r">{{ '{:,}'.format(D.split_rows.actions.val) }}</td><td class="r">{{ '{:,}'.format(D.split_rows.hits.val) }}</td><td class="r">{{ D.split_rows.dodges.val }}</td><td>choosing the model</td></tr>
+<tr><td>test</td><td class="r">{{ D.split.test }}</td><td class="r">{{ '{:,}'.format(D.split_rows.actions.test) }}</td><td class="r">{{ '{:,}'.format(D.split_rows.hits.test) }}</td><td class="r">{{ D.split_rows.dodges.test }}</td><td>one final measurement</td></tr>
+</table></div>
+<p class="note"><b>Why by player:</b> {{ D.split.why }} Imputation medians, categories and scales are fitted only on the training
+part of each fold (they live inside the Pipeline), so no statistic of validation or test leaks into training.</p>
+{% endblock %}

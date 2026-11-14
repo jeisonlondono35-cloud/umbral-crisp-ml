@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="tag">Phase 5</p>
+<h1>Model Deployment</h1>
+<p class="lead">The chosen models are saved together with their preprocessing, served by this Flask app (demo + JSON API),
+documented, and planned into the game's information system.</p>
+
+<h2>5.1 Saved models and preprocessing</h2>
+<div class="scroll"><table><tr><th>File</th><th class="r">KB</th><th>Content</th></tr>
+{% for f, kb in model_files %}<tr><td><code>models/{{ f }}</code></td><td class="r">{{ kb }}</td><td>{{
+ {'next_action.joblib': 'Chosen next-action model: ' ~ card.next_action.model ~ ' — full sklearn Pipeline (imputer + one-hot + scaler + model) or online-Markov parameters',
+  'next_action_global.joblib': 'Best global next-action Pipeline (comparison in the demo)',
+  'hit.joblib': 'Chosen hit model: ' ~ card.hit.model ~ ' — Pipeline with the attack × situation step',
+  'dodge.joblib': 'Dodge model: global mean + shrinkage k',
+  'model_card.json': 'Model card: data source, date, features, test metrics, library version'}.get(f, '') }}</td></tr>{% endfor %}
+</table></div>
+<p>Trained {{ card.trained_at }} on <b>{{ card.source }}</b> data with scikit-learn {{ card.sklearn }}. The serving code
+(<code>src/umbral_ml/predict.py</code>) rebuilds the features with the same functions as training, so training and serving
+cannot drift apart. Measured latency: next action {{ R.serving.next_ms|num(2) }} ms, hit {{ R.serving.hit_ms|num(2) }} ms per prediction.</p>
+
+<h2>5.2 Demo</h2>
+<p><a href="{{ url_for('demo') }}"><b>Open the live demo →</b></a> Enter a player's recent actions and the situation; it returns
+the predicted next action with its probabilities (and what the current in-game model would say), and the probability that a
+chosen boss attack hits.</p>
+
+<h2>5.3 API: inputs, outputs</h2>
+<h3><code>POST /api/predict/next</code></h3>
+<pre>{
+  "history": ["shoot", "shoot", "dodge", "shoot"],   // last actions, oldest first: {{ ACTIONS|join(' | ') }}
+  "w": 2, "mode": "story", "diff": 1,                 // world 1-5, story | ole | pan, difficulty 0-3
+  "hp": 4, "ne": 160, "boss": true,                   // life, distance to enemy (px), boss fight
+  "is_start": false                                   // true = more than 4 s since the last action
+}
+→ {"prediction": "shoot", "probability": 0.52, "proba": {"shoot": 0.52, ...},
+   "in_game": {"prediction": "dodge", "probability": 0.51}, "model": "...", "latency_ms": 3.1}</pre>
+<h3><code>POST /api/predict/hit</code></h3>
+<pre>{"move": "feint", "close": 1, "far": 0, "in_air": 0, "blocking": 1, "moving": 0, "low_hp": 0,
+ "expects_evade": 0.0, "w": 2, "diff": 1, "mode": "story"}
+→ {"p_hit": 0.64, "known_move": true, "model": "...", "latency_ms": 2.0}</pre>
+<h3><code>POST /api/predict/dodge</code> · <code>GET /api/health</code> · <code>GET /monitoring/live</code></h3>
+<pre>{"history": [[20, 5], [30, -10]]}  → {"ox": 26.4, "oy": -2.4}      // previous dodge offsets (px, boss frame)
+GET /api/health   → status, data source, training date, chosen models
+GET /monitoring/live → last logged requests, mean latency, feedback received</pre>
+<p>Try it: <code>curl -X POST {{ request.host_url }}api/predict/next -H "Content-Type: application/json" -d '{"history":["shoot","dodge"],"boss":true}'</code></p>
+
+<h2>5.4 Dependencies and how to run it</h2>
+<pre>python -m venv .venv && .venv\Scripts\activate          # (Linux/macOS: source .venv/bin/activate)
+pip install -r requirements.txt                         # Flask, scikit-learn, pandas, numpy, matplotlib, joblib, reportlab, requests, gunicorn
+python pipeline.py                                      # download data, simulate, prepare, train, evaluate, monitor, PDF
+python -m flask --app app.app run                       # http://127.0.0.1:5000
+gunicorn app.app:app                                    # production (Render: see render.yaml)</pre>
+
+<h2>5.5 First-use instructions</h2>
+<ol class="tight">
+<li>Open the cover page and read the six phases in order (top menu).</li>
+<li>Go to <b>Demo</b>, write the recent actions separated by commas (e.g. <code>shoot, shoot, dodge</code>), set the situation and press <b>Predict</b>.</li>
+<li>Read the predicted action and its probability bar; compare with "in-game model".</li>
+<li>For a boss attack, choose the attack and tick the situation; read the hit probability.</li>
+<li>Use the form at the bottom of this page to send an opinion or report an incident.</li>
+</ol>
+
+<h2>5.6 Integration plan with the information system of Activity 2 (game + web + Supabase)</h2>
+<div class="scroll"><table>
+<tr><th>Step</th><th>What</th><th>Who</th><th>Status</th></tr>
+<tr><td>1 · Data in</td><td>The game (Godot: web, Android, PC) writes anonymous gameplay batches to Supabase with the public key (<code>umbral_ml_log_put</code>), next to the existing accounts, saves, records and ML accuracy tables.</td><td>J.P / J.A</td><td><span class="tag ok">done</span></td></tr>
+<tr><td>2 · Training</td><td><code>pipeline.py</code> reads them with <code>umbral_ml_log_export</code>, retrains, writes the model and the report; a weekly GitHub Action runs it and Render redeploys this app.</td><td>J.A</td><td><span class="tag ok">done</span></td></tr>
+<tr><td>3 · Serving</td><td>This app on Render exposes <code>/api/predict/*</code>; the website of the game (Render) links to it.</td><td>J.Q</td><td><span class="tag ok">done</span></td></tr>
+<tr><td>4 · In the game</td><td>Bosses keep the in-game model as the always-available fallback (it works offline). When online, at the start of a boss fight and every 2 s, the boss asks <code>/api/predict/next</code> (HTTPRequest, like <code>cloud.gd</code>) and uses the answer only if it is fresher than 2 s. If on real data the winner is linear or Markov, its parameters are exported to a JSON shipped with the game and the network is not needed.</td><td>J.P</td><td>planned</td></tr>
+<tr><td>5 · Feedback loop</td><td>Accuracy per account keeps flowing to <code>umbral_ml_public</code>; the in-game "Report error" form and this app's form collect opinions; Phase 6 indicators are reviewed weekly.</td><td>J.Q / J.A</td><td>running</td></tr>
+</table></div>
+
+<h2>5.7 Monitoring, incident reports and user opinions</h2>
+<ul>
+<li><b>Every prediction is logged</b> (time, model, inputs, output, latency) to <code>monitoring/live_predictions.jsonl</code>; summary at <code>/monitoring/live</code>.</li>
+<li><b>Incidents</b> (wrong answers, errors, slowness): the form below (type "incident"), the game's Pause → Report error, or a GitHub issue. Severity: <b>high</b> = API down or wrong outputs for everyone → J.A fixes or rolls back to the previous model the same day; <b>medium</b> = a segment worse than expected → review at the weekly meeting; <b>low</b> = text or UI → next release.</li>
+<li><b>Rollback:</b> every model is versioned in git with its model card; redeploying the previous commit restores it.</li>
+<li><b>User opinions:</b> the form below (rating 1–5) and the game's report form (rating 1–10); reviewed weekly with the indicators.</li>
+</ul>
+
+<h3 id="feedback">Send an opinion or report an incident</h3>
+{% if request.args.get('sent') %}<p class="note">Thanks — your message was recorded.</p>{% endif %}
+<form method="post" action="{{ url_for('feedback') }}" class="card" style="max-width:560px">
+  <label>Type</label><select name="type"><option value="opinion">Opinion</option><option value="incident">Incident</option></select>
+  <label>Rating (1 = bad, 5 = great)</label><select name="rating">{% for i in range(1, 6) %}<option>{{ i }}</option>{% endfor %}</select>
+  <label>Message</label><textarea name="text" rows="3" maxlength="2000"></textarea>
+  <input type="hidden" name="page" value="phase5">
+  <button type="submit">Send</button>
+</form>
+{% endblock %}

@@ -1,0 +1,185 @@
+{
+ "first_drift_alert": 5,
+ "first_perf_alert": null,
+ "note": "Operational weeks are SIMULATED (generated players with injected drift). Real indicators come from the game's Supabase project.",
+ "thresholds": {
+  "psi_warn": 0.1,
+  "psi_alert": 0.2,
+  "acc_drop": 0.05,
+  "test_accuracy": 0.5490461538461539,
+  "baseline_weeks": 3,
+  "baseline_accuracy": 0.4793321218817264
+ },
+ "weeks": [
+  {
+   "week": 1,
+   "start": "2026-12-01",
+   "simulated": true,
+   "drift_injected": 0,
+   "actions": 16422,
+   "players": 25,
+   "accuracy": 0.46364632809645595,
+   "in_game_accuracy": 0.4536954585930543,
+   "share_dodge": 0.1969309462915601,
+   "accuracy_2w": 0.46364632809645595,
+   "psi_target": 0.01491751702459354,
+   "psi_ne": 0.0013619486458964893,
+   "psi_mode": 0.012447907947068845,
+   "psi_diff": 0.011410645692976909,
+   "alerts": [],
+   "status": "OK"
+  },
+  {
+   "week": 2,
+   "start": "2026-12-08",
+   "simulated": true,
+   "drift_injected": 0,
+   "actions": 18803,
+   "players": 25,
+   "accuracy": 0.4677976918576823,
+   "in_game_accuracy": 0.45666464121968736,
+   "share_dodge": 0.13965856512258681,
+   "accuracy_2w": 0.46572200997706914,
+   "psi_target": 0.009170064945461392,
+   "psi_ne": 0.0002786704241671312,
+   "psi_mode": 0.00920216476276141,
+   "psi_diff": 0.09414316672905536,
+   "alerts": [],
+   "status": "OK"
+  },
+  {
+   "week": 3,
+   "start": "2026-12-15",
+   "simulated": true,
+   "drift_injected": 0,
+   "actions": 20527,
+   "players": 25,
+   "accuracy": 0.506552345691041,
+   "in_game_accuracy": 0.4980585951288387,
+   "share_dodge": 0.17167632873776004,
+   "accuracy_2w": 0.48717501877436165,
+   "psi_target": 0.007629319089115443,
+   "psi_ne": 0.0011389028199467418,
+   "psi_mode": 0.014132972031820798,
+   "psi_diff": 0.09522963807617751,
+   "alerts": [],
+   "status": "OK"
+  },
+  {
+   "week": 4,
+   "start": "2026-12-22",
+   "simulated": true,
+   "drift_injected": 0.5,
+   "actions": 20812,
+   "players": 25,
+   "accuracy": 0.45608302902171827,
+   "in_game_accuracy": 0.44805130244581426,
+   "share_dodge": 0.26148375936959445,
+   "accuracy_2w": 0.48131768735637964,
+   "psi_target": 0.0626835472462366,
+   "psi_ne": 0.0815447827137617,
+   "psi_mode": 0.006201075457094186,
+   "psi_diff": 0.15496158155008893,
+   "alerts": [
+    "drift warning: PSI 0.15 > 0.1"
+   ],
+   "status": "WATCH"
+  },
+  {
+   "week": 5,
+   "start": "2026-12-29",
+   "simulated": true,
+   "drift_injected": 0.9,
+   "actions": 20104,
+   "players": 25,
+   "accuracy": 0.4598089932351771,
+   "in_game_accuracy": 0.4453205524634096,
+   "share_dodge": 0.3559490648627139,
+   "accuracy_2w": 0.4579460111284477,
+   "psi_target": 0.21243652533938673,
+   "psi_ne": 0.22655827655884436,
+   "psi_mode": 0.004551936979333425,
+   "psi_diff": 0.032648321432721485,
+   "alerts": [
+    "DATA DRIFT: PSI 0.23 > 0.2"
+   ],
+   "status": "RETRAIN"
+  },
+  {
+   "week": 6,
+   "start": "2027-01-05",
+   "simulated": true,
+   "drift_injected": 1.3,
+   "actions": 19914,
+   "players": 25,
+   "accuracy": 0.4287435974691172,
+   "in_game_accuracy": 0.41011762256687834,
+   "share_dodge": 0.35326905694486294,
+   "accuracy_2w": 0.4442762953521472,
+   "psi_target": 0.20824292740290565,
+   "psi_ne": 0.33223959803309866,
+   "psi_mode": 0.009012137773423074,
+   "psi_diff": 0.16013939372553307,
+   "alerts": [
+    "DATA DRIFT: PSI 0.33 > 0.2"
+   ],
+   "status": "RETRAIN"
+  },
+  {
+   "week": 7,
+   "start": "2027-01-12",
+   "simulated": true,
+   "drift_injected": 1.3,
+   "actions": 21386,
+   "players": 25,
+   "accuracy": 0.5099597867763958,
+   "in_game_accuracy": 0.500507565137526,
+   "share_dodge": 0.45525109884971476,
+   "accuracy_2w": 0.4693516921227565,
+   "psi_target": 0.42592769837525657,
+   "psi_ne": 0.3615614995516565,
+   "psi_mode": 0.008312486458731089,
+   "psi_diff": 0.01868981874343427,
+   "alerts": [
+    "DATA DRIFT: PSI 0.43 > 0.2"
+   ],
+   "status": "RETRAIN"
+  },
+  {
+   "week": 8,
+   "start": "2027-01-19",
+   "simulated": true,
+   "drift_injected": 1.3,
+   "actions": 20564,
+   "players": 25,
+   "accuracy": 0.46099980548531416,
+   "in_game_accuracy": 0.453836085380588,
+   "share_dodge": 0.40235362769889127,
+   "accuracy_2w": 0.48547979613085496,
+   "psi_target": 0.3532744162720535,
+   "psi_ne": 0.37357190793335204,
+   "psi_mode": 0.044811229258464765,
+   "psi_diff": 0.27045648042816856,
+   "alerts": [
+    "DATA DRIFT: PSI 0.37 > 0.2"
+   ],
+   "status": "RETRAIN"
+  }
+ ],
+ "real": {
+  "ml_public": {
+   "fetched_at": "2026-11-14T20:41:37+00:00",
+   "players": 3,
+   "made": 1814,
+   "right": 1392,
+   "acc_avg": 0.706,
+   "styles": {
+    "ranged": 1,
+    "block": 2
+   }
+  },
+  "log_stats": {
+   "fetched_at": "2026-11-14T20:41:37+00:00"
+  }
+ }
+}

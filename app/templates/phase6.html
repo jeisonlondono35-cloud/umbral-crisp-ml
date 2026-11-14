@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block body %}
+{% set th = M.thresholds %}
+<p class="tag">Phase 6</p>
+<h1>Monitoring & Maintenance</h1>
+<p class="lead">What is watched, how drift and a drop in performance are detected, how often, by whom, when to retrain,
+and a first monitoring test run end to end. Code: <code>src/umbral_ml/monitor.py</code>.</p>
+
+<h2>6.1 Indicators</h2>
+<div class="scroll"><table>
+<tr><th>Indicator</th><th>Kind</th><th>Source</th><th>Threshold</th></tr>
+<tr><td>API up, requests, mean latency</td><td>operation</td><td><code>/api/health</code>, <code>/monitoring/live</code></td><td>latency &lt; 50 ms; any 5xx = incident</td></tr>
+<tr><td>Real events per day, players per day</td><td>data volume</td><td><code>umbral_ml_log_stats</code> (REAL)</td><td>a day with 0 events while people play = logging broken</td></tr>
+<tr><td>Next-action accuracy (weekly, 2-week mean)</td><td>performance</td><td>logged in-game predictions vs. real actions (REAL); weekly evaluation of the chosen model</td><td>baseline (first {{ th.baseline_weeks }} weeks) − {{ (th.acc_drop * 100)|int }} points</td></tr>
+<tr><td>In-game accuracy over all accounts</td><td>performance</td><td><code>umbral_ml_public</code> (REAL): {{ (PUB.right/PUB.made)|pct }} on {{ '{:,}'.format(PUB.made) }} predictions</td><td>same rule</td></tr>
+<tr><td>Hit model: Brier and real vs. predicted hit rate per difficulty</td><td>performance / fairness</td><td>attacks in the log</td><td>Brier above the constant-rate baseline</td></tr>
+<tr><td>PSI of the action mix, enemy distance, mode, difficulty</td><td>data drift</td><td>weekly data vs. a reference window (the first weeks after a deployment)</td><td>warning &gt; {{ th.psi_warn }} · alert &gt; {{ th.psi_alert }}</td></tr>
+<tr><td>Opinions and incidents</td><td>users</td><td>forms (app and game)</td><td>any high-severity incident</td></tr>
+</table></div>
+
+<h2>6.2 Detecting data drift and performance loss</h2>
+<ul>
+<li><b>Data drift:</b> Population Stability Index, PSI = Σ (cur − ref) · ln(cur / ref), over the categories (action, mode, difficulty) or the 10 training deciles (enemy distance). Below 0.10 stable, 0.10–0.20 watch, above 0.20 significant change.</li>
+<li><b>Performance:</b> every week the chosen model and the in-game model are scored on the new real actions (the log already contains the true next action). A 2-week mean is used because one week of a few players is noisy.</li>
+<li><b>Concept drift</b> shows as performance loss without input drift (players react differently to the same situation).</li>
+</ul>
+
+<h2>6.3 Review frequency, owners, retraining</h2>
+<div class="scroll"><table>
+<tr><th>What</th><th>When</th><th>Who</th></tr>
+<tr><td>Automatic: fetch real data, retrain, evaluate, monitor, report (GitHub Action <code>weekly.yml</code>)</td><td>every Monday</td><td>automatic; J.A reviews</td></tr>
+<tr><td>Indicator review (this page, <code>/monitoring/live</code>, forms)</td><td>weekly</td><td>J.A (model and data) · J.Q (web, reports)</td></tr>
+<tr><td>Game integration checks (bosses still fair, fallback works offline)</td><td>each game release</td><td>J.P</td></tr>
+<tr><td>Full CRISP-ML review (problem, criteria)</td><td>each semester or after a big game update</td><td>J.A, J.P, J.Q</td></tr>
+</table></div>
+<p><b>Retrain when:</b> (1) any PSI &gt; {{ th.psi_alert }}; (2) 2-week accuracy below the baseline − {{ (th.acc_drop*100)|int }} points;
+(3) a game update changes combat (new actions, bosses or attacks); (4) the real data doubles since the last training.
+<b>Deploy the new model only if</b> it passes the same Phase 4 rule on new validation players and is not worse on test than the current one;
+otherwise keep the current one and investigate.</p>
+
+<h2>6.4 Risks and quality controls</h2>
+<ul>
+<li>Bad batches are rejected by the server (size, format, rate limit of 8,000 events per player per hour) and cleaned by Phase 2 rules.</li>
+<li>Unit-like checks run in the pipeline: no player in two partitions, preprocessing fitted only on train, metrics recomputed from files.</li>
+<li>The in-game model stays as fallback: if the API or the new model fails, bosses keep working.</li>
+<li>Fairness: accuracy and hit rate per difficulty are part of the weekly review (expert risk: "too hard", "unfair").</li>
+<li>Privacy: anonymous ids only; players can switch logging off; the export only returns events.</li>
+<li>Updates: model, data report and model card are committed together, so every deployed model can be traced and rolled back.</li>
+</ul>
+
+<h2>6.5 Initial monitoring test <span class="tag sim">SIMULATED operations</span></h2>
+<p class="banner"><b>SIMULATED:</b> {{ M.note }} Weekly batches of 25 new simulated players; a change in how people play is
+injected from week 4 (more dodging, fights from farther away). Log: <code>monitoring/monitoring_log_simulated.jsonl</code>.</p>
+<div class="two">
+<figure><img src="{{ url_for('figure', name='fig_mon_psi.png') }}" alt="PSI per week"></figure>
+<figure><img src="{{ url_for('figure', name='fig_mon_accuracy.png') }}" alt="accuracy per week"></figure>
+</div>
+<div class="scroll"><table>
+<tr><th>Week</th><th>Drift injected</th><th class="r">Actions</th><th class="r">Accuracy</th><th class="r">2-week</th><th class="r">In-game</th><th class="r">PSI actions</th><th class="r">PSI distance</th><th>Status</th><th>Alerts</th></tr>
+{% for w in M.weeks %}<tr><td>{{ w.week }} <span class="tag sim">SIM</span></td><td>{{ w.drift_injected }}</td><td class="r">{{ '{:,}'.format(w.actions) }}</td>
+<td class="r">{{ w.accuracy|pct }}</td><td class="r">{{ w.accuracy_2w|pct }}</td><td class="r">{{ w.in_game_accuracy|pct }}</td>
+<td class="r">{{ w.psi_target|num }}</td><td class="r">{{ w.psi_ne|num }}</td>
+<td>{% if w.status == 'OK' %}<span class="tag ok">OK</span>{% elif w.status == 'WATCH' %}<span class="tag">WATCH</span>{% else %}<span class="tag bad">RETRAIN</span>{% endif %}</td>
+<td>{{ w.alerts|join('; ') }}</td></tr>{% endfor %}
+</table></div>
+<p><b>Reading:</b> the change starts in week 4; the PSI raises the first drift ALERT in week
+<b>{{ M.first_drift_alert or '-' }}</b>{% if M.first_perf_alert %} and accuracy crosses the retraining line in week <b>{{ M.first_perf_alert }}</b>{% else %},
+while the 2-week accuracy never falls below the retraining line{% endif %}. Data drift is caught before (or without) a visible
+loss of accuracy — the reason to watch the inputs and not only the results. Reference window and operational baseline:
+weeks 1–{{ th.baseline_weeks }} (accuracy {{ th.baseline_accuracy|pct }}).</p>
+
+<h2>6.6 Real indicators right now <span class="tag">REAL</span></h2>
+<ul>
+<li>In-game next-action accuracy over all accounts: <b>{{ (PUB.right/PUB.made)|pct }}</b> ({{ '{:,}'.format(PUB.right) }} of {{ '{:,}'.format(PUB.made) }}; mean per player {{ PUB.acc_avg|pct }}; {{ PUB.players }} players) — fetched {{ PUB.fetched_at }}.</li>
+<li>Anonymous gameplay log: {% if LS.events %}<b>{{ '{:,}'.format(LS.events) }}</b> events from {{ LS.players }} players in {{ LS.batches }} batches{% else %}installed in the game; waiting for the first batches (the SQL must be installed in Supabase){% endif %}.</li>
+</ul>
+{% endblock %}
