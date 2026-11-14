@@ -69,7 +69,7 @@ def ctx() -> dict:
             "exps": exps, "PHASES": PHASES, "ACTIONS": ACTIONS, "AL": ACTION_LABEL, "WORLDS": WORLDS,
             "MODES": MODES, "DIFFS": DIFFS, "MOVES": MOVES, "HIT_X": HIT_X,
             "model_files": sorted((p.name, round(p.stat().st_size / 1024, 1)) for p in MODELS.iterdir()),
-            "has_pdf": (REPORTS / "UMBRAL_CRISP-ML_report.pdf").exists()}
+            "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists()}
 
 
 @app.template_filter("pct")
@@ -117,7 +117,7 @@ def figure(name):
 
 @app.route("/report.pdf")
 def report_pdf():
-    return send_from_directory(REPORTS, "UMBRAL_CRISP-ML_report.pdf")
+    return send_from_directory(REPORTS, "R3A2 Traces in data.pdf", download_name="R3A2 Traces in data.pdf")
 
 
 @app.route("/experiments.csv")
@@ -211,10 +211,11 @@ def health():
 @app.route("/demo", methods=["GET", "POST"])
 def demo():
     out_next = out_hit = err = None
-    form = request.form.to_dict() if request.method == "POST" else {
+    run = request.method == "POST" or "history" in request.args      # a GET with ?history=... also predicts (shareable link)
+    form = request.form.to_dict() if request.method == "POST" else request.args.to_dict() if run else {
         "history": "shoot, shoot, dodge, shoot, shoot, dodge, shoot, shoot, dodge, shoot", "w": "2", "mode": "story", "diff": "1", "hp": "4",
         "ne": "160", "boss": "on", "move": "feint", "close": "on", "blocking": "on"}
-    if request.method == "POST":
+    if run:
         try:
             hist, c = _next_input(form)
             t = time.perf_counter()

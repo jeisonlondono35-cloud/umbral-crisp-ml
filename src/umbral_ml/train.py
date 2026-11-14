@@ -434,7 +434,7 @@ def figures(rep: dict, A: dict, B: dict, C: dict, acts: pd.DataFrame, hits: pd.D
     ca = A["candidates"]
     names = list(ca)
     figs["cmp_a"] = plots.hbar(names, [ca[n]["val"]["accuracy"] for n in names],
-                               "Next action: validation accuracy (new players)", "accuracy", chosen=A["chosen"],
+                               "Next action: validation accuracy", "accuracy", chosen=A["chosen"],
                                baseline=["Majority class", "In-game Markov-2 (decay 0.97)"], name="fig_cmp_a")
     cb = B["candidates"]
     names = list(cb)

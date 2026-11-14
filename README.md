@@ -1,13 +1,13 @@
 # UMBRAL · CRISP-ML
 
-**Teaching a game's bosses to read the player.** The machine learning of the game
+**R3A2 · Traces in Data — teaching a game's bosses to read the player.** The machine learning of the game
 [UMBRAL](https://juego-pixelart.onrender.com/) (J.A · J.P · J.Q), developed and documented with the six phases of
 CRISP-ML in a Flask application.
 
 | Deliverable | Where |
 |---|---|
 | Flask app (cover + six phases + live demo + API) | https://umbral-crisp-ml.onrender.com |
-| Technical report (PDF) | [`reports/UMBRAL_CRISP-ML_report.pdf`](reports/UMBRAL_CRISP-ML_report.pdf) (also `/report.pdf` in the app) |
+| Technical report (PDF) **R3A2 Traces in data** | [`reports/R3A2 Traces in data.pdf`](<reports/R3A2 Traces in data.pdf>) (also `/report.pdf` in the app) |
 | This repository | code, training scripts, dependencies, saved models + preprocessing, results |
 
 ## The problem in one paragraph
@@ -53,7 +53,7 @@ Options: `python pipeline.py --source real|simulated|auto` and `--no-fetch` (off
 | Data engineering (2) | `python -m src.umbral_ml.prepare [auto\|real\|simulated]` | `data/processed/*.csv`, `data_report.json` |
 | Model engineering + evaluation (3, 4) | `python -m src.umbral_ml.train` | `models/*.joblib`, `model_card.json`, `reports/results.json`, `reports/experiments.csv`, `reports/figures/` |
 | Monitoring test (6) | `python -m src.umbral_ml.monitor` | `monitoring/monitoring_simulated.json`, `.jsonl`, figures |
-| Report | `python -m src.umbral_ml.report` | `reports/UMBRAL_CRISP-ML_report.pdf` |
+| Report | `python -m src.umbral_ml.report` | `reports/R3A2 Traces in data.pdf` (format of the course: university cover, contents, simple English A2-B1) |
 
 The seed is fixed (42), so the simulated run reproduces the same numbers.
 

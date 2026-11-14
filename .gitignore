@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 .pytest_cache/
 monitoring/live_predictions.jsonl
+reports/_crops/
