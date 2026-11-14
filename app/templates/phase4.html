@@ -70,7 +70,7 @@ one model for everybody under-fits because players differ, and the personal feat
 {% for k, v in A.test_segments.items() %}{{ k }} {{ v.accuracy|pct }} (n={{ v.n }}){{ ', ' if not loop.last }}{% endfor %}.
 Hit task: {% for k, v in B.test_segments.items() %}{{ k }}: Brier {{ v.brier|num }}, real hit rate {{ v.hit_rate|pct }} vs predicted {{ v.mean_pred|pct }}{{ '; ' if not loop.last }}{% endfor %}.</li>
 <li><b>Per action (test recall):</b> {% for a, r in A.test_recall.items() %}{{ a }} {{ r|pct(0) }}{{ ', ' if not loop.last }}{% endfor %} — rare actions (hide, jump) are predicted worse; the bosses only react to confident predictions.</li>
-<li><b>Risks:</b> trained on {{ R.source }} data (to be confirmed on real data); real players are friends of the team; a model that is "too right" can feel unfair (expert).</li>
+<li><b>Risks:</b> trained on {{ R.source }} data{% if R.source == 'SIMULATED' %} (to be confirmed on real data){% elif D.split.group_by != 'pid' %} from only {{ D.before.players }} players, split by session (a returning player can appear in train and test){% endif %}; real players are friends of the team; a model that is "too right" can feel unfair (expert).</li>
 </ul>
 <div class="two">
 <figure><img src="{{ url_for('figure', name='fig_confusion.png') }}" alt="confusion matrix"></figure>
@@ -79,6 +79,7 @@ Hit task: {% for k, v in B.test_segments.items() %}{{ k }}: Brier {{ v.brier|num
 <figure><img src="{{ url_for('figure', name='fig_importance.png') }}" alt="importance"><figcaption>What the best global next-action model relies on.</figcaption></figure>
 
 <h2>4.5 Review with the domain expert</h2>
+{% if R.source == 'REAL' and 'SIMULATED' in E.data_shown %}<p class="banner"><b>Note:</b> the review below was done on the first (simulated) run; the numbers quoted in the questions are from that run. It is repeated on these real results.</p>{% endif %}
 <p><b>{{ E.expert }}</b> · {{ E.date }} · {{ E.method }} <span class="tag sim">{{ E.data_shown }}</span></p>
 <div class="scroll"><table><tr><th>Question</th><th>Answer (original)</th><th>Answer (English)</th></tr>
 {% for q in E.answers %}<tr><td>{{ q.question }}</td><td><i>"{{ q.answer_es }}"</i></td><td>{{ q.answer_en }}</td></tr>{% endfor %}</table></div>

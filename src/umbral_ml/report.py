@@ -243,7 +243,9 @@ def main() -> None:
                     + ", ".join(f"{k} {pct(v, 0)}" for k, v in A["test_recall"].items()) + " — rare actions are predicted worse.", P),
           fig("fig_confusion.png", 10), fig("fig_calibration.png", 9), fig("fig_importance.png", 12),
           Paragraph("Review with the domain expert", H2),
-          Paragraph(f"{E['expert']} — {E['date']}. {E['method']} ({E['data_shown']})", P),
+          Paragraph(f"{E['expert']} — {E['date']}. {E['method']} ({E['data_shown']})"
+                    + (" Note: the numbers quoted in the questions come from that simulated run; the review is repeated on these real results."
+                       if not sim and "SIMULATED" in E["data_shown"] else ""), P),
           table([["Question", "Answer (original)", "Answer (English)"]] + [[q["question"], q["answer_es"], q["answer_en"]] for q in E["answers"]],
                 [6 * cm, 3.2 * cm, 6.8 * cm]),
           Paragraph("Consequences: " + " ".join(E["consequences"]), P),

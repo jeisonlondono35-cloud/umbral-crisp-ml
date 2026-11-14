@@ -51,7 +51,7 @@ and plan its monitoring.</p>
 <tr><td><b>In-game accuracy per account</b> (<code>umbral_ml_public</code>)</td><td>Each account reports how many next-action predictions its model made and how many were right (sequential, real).</td>
 <td><span class="tag">REAL</span> {{ PUB.players }} players · {{ '{:,}'.format(PUB.made) }} predictions · {{ (PUB.right/PUB.made)|pct }} correct</td></tr>
 <tr><td><b>Simulated players</b> (<code>src/umbral_ml/simulate.py</code>)</td><td>Players generated from the game's rules (same actions, attacks, features and in-game models) with personal habits, context effects and drift — used while the real log is too small, and for the monitoring test.</td>
-<td><span class="tag sim">SIMULATED</span> {{ '{:,}'.format(b.events) }} events · {{ b.players }} players · {{ b.sessions }} sessions</td></tr>
+<td><span class="tag sim">SIMULATED</span> {% if D.source == 'SIMULATED' %}{{ '{:,}'.format(b.events) }} events · {{ b.players }} players · {{ b.sessions }} sessions (used for the models of this build){% else %}used only for the monitoring test (the models of this build use the REAL log){% endif %}</td></tr>
 </table></div>
 
 <h3>Variables</h3>

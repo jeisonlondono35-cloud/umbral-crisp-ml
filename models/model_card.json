@@ -1,6 +1,6 @@
 {
  "source": "SIMULATED",
- "trained_at": "2026-11-14T20:51:01+00:00",
+ "trained_at": "2026-11-14T21:34:55+00:00",
  "sklearn": "1.9.1",
  "next_action": {
   "model": "Gradient boosting (HistGB)",
@@ -53,7 +53,7 @@
   "test": {
    "brier": 0.18939634531853772,
    "roc_auc": 0.6662870550375081,
-   "log_loss": 0.564948496266127
+   "log_loss": 0.5649484962661269
   }
  },
  "dodge": {

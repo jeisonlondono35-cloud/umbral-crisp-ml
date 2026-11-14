@@ -42,7 +42,12 @@ from .features import H_X, interactions as _interactions
 from .config import ACTIONS, ACTION_LABEL, DIFFS, HIT_X, MODELS, MODES, MOVES, PROC, REPORTS, SEED
 
 EPS = 1e-6
-CV = GroupKFold(n_splits=5)
+GROUP = "pid"            # grouping column of the split (data_report.json): player, or session with < 10 players
+
+
+def cv_for(groups) -> GroupKFold:
+    """5 grouped folds, fewer if there are fewer groups (first weeks of real data)."""
+    return GroupKFold(n_splits=max(2, min(5, len(set(groups)))))
 EXPERIMENTS: list[dict] = []
 
 # ---------------------------------------------------------------------------- feature sets
@@ -81,7 +86,7 @@ def log_exp(task, model, fset, params, cv_mean, cv_std, val, train_score, secs, 
 
 def _grid(est, grid, X, y, groups, scoring):
     t = time.time()
-    gs = GridSearchCV(est, grid, cv=CV, scoring=scoring, n_jobs=-1, return_train_score=True, refit=True)
+    gs = GridSearchCV(est, grid, cv=cv_for(groups), scoring=scoring, n_jobs=-1, return_train_score=True, refit=True)
     gs.fit(X, y, groups=groups)
     i = gs.best_index_
     return gs, gs.cv_results_["mean_test_score"][i], gs.cv_results_["std_test_score"][i], \
@@ -179,7 +184,7 @@ def task_a(acts: pd.DataFrame) -> dict:
     for fset, (cat, num) in A_FEATURE_SETS.items():
         cols = cat + num
         pipe = Pipeline([("pre", _pre(cat, num)), ("clf", LogisticRegression(max_iter=2000))])
-        gs, m_, s_, trs, secs = _grid(pipe, {"clf__C": [0.1, 1.0, 10.0]}, tr[cols], y_tr, tr.pid, "accuracy")
+        gs, m_, s_, trs, secs = _grid(pipe, {"clf__C": [0.1, 1.0, 10.0]}, tr[cols], y_tr, tr[GROUP], "accuracy")
         add(f"Logistic regression [{fset}]", proba_a(gs, va[cols]), proba_a(gs, tr[cols]),
             (m_, s_), secs, gs.best_params_, fset)
         fitted[f"Logistic regression [{fset}]"] = (gs.best_estimator_, cols)
@@ -192,7 +197,7 @@ def task_a(acts: pd.DataFrame) -> dict:
          {"clf__learning_rate": [0.05, 0.1], "clf__max_depth": [3, 6], "clf__max_iter": [150]}),
     ]:
         pipe = Pipeline([("pre", _pre(cat, num)), ("clf", est)])
-        gs, m_, s_, trs, secs = _grid(pipe, grid, tr[cols], y_tr, tr.pid, "accuracy")
+        gs, m_, s_, trs, secs = _grid(pipe, grid, tr[cols], y_tr, tr[GROUP], "accuracy")
         add(name, proba_a(gs, va[cols]), proba_a(gs, tr[cols]), (m_, s_), secs, gs.best_params_,
             "seq+ctx+hist+online")
         fitted[name] = (gs.best_estimator_, cols)
@@ -245,7 +250,7 @@ def task_a(acts: pd.DataFrame) -> dict:
                                 n_jobs=-1)
     res["importance"] = dict(sorted(zip(cols, map(float, pi.importances_mean)), key=lambda t: -t[1]))
     # learning curve (over/under-fitting): grouped CV on train+val
-    sizes, trs, vas = learning_curve(clone(est), trva[cols], trva.target, groups=trva.pid, cv=CV,
+    sizes, trs, vas = learning_curve(clone(est), trva[cols], trva.target, groups=trva[GROUP], cv=cv_for(trva[GROUP]),
                                      train_sizes=[0.1, 0.25, 0.5, 0.75, 1.0], scoring="accuracy", n_jobs=-1)
     res["learning_curve"] = {"sizes": sizes.tolist(), "train": trs.mean(1).tolist(), "val": vas.mean(1).tolist()}
     if chosen in fitted:
@@ -324,7 +329,7 @@ def task_b(hits: pd.DataFrame) -> dict:
          {"clf__learning_rate": [0.05, 0.1], "clf__max_depth": [3, 5], "clf__max_iter": [150]}),
     ]
     for name, cols, _, pipe, grid in specs:
-        gs, m_, s_, trs, secs = _grid(pipe, grid, tr[cols], tr.y, tr.pid, "neg_brier_score")
+        gs, m_, s_, trs, secs = _grid(pipe, grid, tr[cols], tr.y, tr[GROUP], "neg_brier_score")
         add(name, gs.predict_proba(va[cols])[:, 1], gs.predict_proba(tr[cols])[:, 1], (-m_, s_), secs,
             gs.best_params_, "+".join(["situation"] + (["attack"] if "mv" in cols else [])))
         fitted[name] = (gs.best_estimator_, cols)
@@ -531,6 +536,8 @@ def main() -> dict:
     dod = pd.read_csv(PROC / "dodges.csv")
     rep = json.loads((PROC / "data_report.json").read_text(encoding="utf-8"))
     EXPERIMENTS.clear()
+    global GROUP
+    GROUP = rep["split"]["group_by"]
     t = time.time()
     A = task_a(acts)
     print(f"A done {time.time() - t:.0f}s  chosen={A['chosen']}  test={A['test'][A['chosen']]}")
