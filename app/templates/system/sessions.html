@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>Play sessions</h1>
+<p class="lead">Process: <b>registered</b> (uploaded) → <b>analyzed</b> (the model ran) → <b>reviewed</b> (a difficulty decision was applied).</p>
+<form class="row" method="get">
+  <select name="status" style="max-width:180px"><option value="">All statuses</option>{% for v in ('registered', 'analyzed', 'reviewed') %}<option {{ 'selected' if st == v }}>{{ v }}</option>{% endfor %}</select>
+  <select name="mode" style="max-width:180px"><option value="">All modes</option>{% for k, v in MODES.items() %}<option value="{{ k }}" {{ 'selected' if mode == k }}>{{ v }}</option>{% endfor %}</select>
+  <button class="btn small">Filter</button>
+  {% if current_user.staff %}<a style="margin-left:auto" href="{{ url_for('ops.sessions_csv') }}">Export CSV</a>{% endif %}
+</form>
+<div class="scroll" style="margin-top:10px"><table>
+<tr><th>#</th><th>Player</th><th>Played</th><th>Mode · world</th><th>Difficulty</th><th class="r">Deaths/10 min</th><th>Result</th><th class="r">Actions</th><th class="r">Predictability</th><th class="r">Hit risk</th><th>Status</th><th></th></tr>
+{% for s in rows %}<tr><td><a href="{{ url_for('ops.session', sid=s.id) }}">#{{ s.id }}</a></td><td>{{ s.player.gamer_tag }}</td><td>{{ m.dt(s.played_at) }}</td>
+<td>{{ MODES[s.mode] }} · {{ WORLDS[s.world] }}</td><td>{{ DIFFS[s.difficulty] }}</td><td class="r">{{ '%.1f'|format(s.deaths_per_10) }}</td><td>{{ OUTCOMES[s.outcome] }}</td>
+<td class="r">{{ s.action_list|length }}</td><td class="r">{{ m.pctv(s.predictability) }}</td><td class="r">{{ m.pctv(s.risk) }}</td><td>{{ m.st(s.status) }}</td>
+<td>{% if current_user.staff and s.status == 'registered' %}{{ m.post(url_for('ops.session_analyze', sid=s.id), 'Analyze') }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="12" class="muted">No sessions.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

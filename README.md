@@ -9,6 +9,38 @@ CRISP-ML in a Flask application.
 | Flask app (cover + six phases + live demo + API) | https://umbral-crisp-ml.onrender.com |
 | Technical report (PDF) **R3A2 Traces in data** | [`reports/R3A2 Traces in data.pdf`](<reports/R3A2 Traces in data.pdf>) (also `/report.pdf` in the app) |
 | This repository | code, training scripts, dependencies, saved models + preprocessing, results |
+| **Activity 2** · information system (accounts, roles, players, sessions, model in the workflow) | same app, under `/app` (sign in) |
+| Activity 2 report (PDF, manuals as appendices) | [`reports/R3 Activity 2 From traces to decisions.pdf`](<reports/R3 Activity 2 From traces to decisions.pdf>) (also `/report-activity2.pdf`) |
+| Technical manual · User manual and training guide | [`docs/system/TECHNICAL_MANUAL.md`](docs/system/TECHNICAL_MANUAL.md) · [`docs/system/USER_MANUAL.md`](docs/system/USER_MANUAL.md) |
+
+## Activity 2 · the information system
+
+The Flask app now manages the business processes of the game's **players and accounts** and uses the Activity 1
+model inside them. Public: the cover and the six CRISP-ML phases. Signed-in (`/app`): player profiles and saved games,
+play sessions, records, support tickets, difficulty recommendations, reports, monitoring and (admin) users and roles.
+
+* **Roles:** player (only their own data), analyst (runs the model and decides), administrator (users and roles).
+  Public registration always creates players. Passwords: scrypt hash. CSRF, lockout after 5 wrong passwords.
+* **The model in the process:** an analyst runs the saved models on a stored play session (same feature code as
+  training, `src/umbral_ml/predict.py`, with the player's earlier sessions as history) → predictability and hit risk →
+  a fixed rule proposes to lower / raise the difficulty → a person approves or rejects → the account changes → the next
+  session says if it worked. Every inference is stored with date, user, result, model version and latency.
+* **Monitoring:** errors, inference requests and response times, accuracy against the real next actions per week,
+  data drift (PSI) and model versions (`/app/monitoring`).
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env                        # optional: without DATABASE_URL a local SQLite file is used
+ADMIN_USERNAME=admin ADMIN_PASSWORD=<pw> flask --app app.app run      # first admin is created on start-up
+flask --app app.app seed-demo               # optional demo data (Activity 1 TEST players, SIMULATED)
+python -m pytest -q tests                   # automatic tests (roles, rules, whole workflow)
+python -m src.umbral_ml.report_system       # Activity 2 report PDF
+python tools/operational_review.py https://umbral-crisp-ml.onrender.com   # review of the deployed system (REVIEW_* vars)
+```
+
+**Database (production):** Supabase PostgreSQL. Set `DATABASE_URL` (Supabase → Connect → Session pooler URI),
+`SECRET_KEY`, `ADMIN_USERNAME` and `ADMIN_PASSWORD` in Render → Environment; the tables are created on the first start.
+No secret is stored in the repository (see `.env.example`). Details: technical manual, sections 4–6.
 
 ## The problem in one paragraph
 

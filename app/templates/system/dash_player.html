@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<p class="tag">Player</p>
+<h1>Hello, {{ current_user.display_name }}</h1>
+{% if not p %}
+<p class="banner">Your user has no player profile. Open a ticket in Support and an analyst will link one.</p>
+{% else %}
+<p class="lead">Your player profile <b>{{ p.gamer_tag }}</b> plays at <b>{{ DIFFS[p.difficulty] }}</b>. Upload your
+play sessions: an analyst runs the model on them and, if your fights look too hard or too easy, proposes a change
+of difficulty for your account.</p>
+<div class="grid">
+  <div class="card"><h3>Saved games</h3><div class="kpi">{{ p.saves|length }}</div></div>
+  <div class="card"><h3>Sessions</h3><div class="kpi">{{ p.sessions|length }}</div>
+    <small class="muted">{{ p.sessions|selectattr('status', 'equalto', 'registered')|list|length }} waiting for analysis</small></div>
+  <div class="card"><h3>Records</h3><div class="kpi">{{ p.records|length }}</div></div>
+  <div class="card"><h3>Difficulty changes</h3><div class="kpi">{{ p.recommendations|selectattr('status', 'equalto', 'applied')|list|length }}</div></div>
+</div>
+<p class="row" style="margin-top:16px">
+  <a class="btn" href="{{ url_for('ops.player', pid=p.id) }}">My profile</a>
+  <a class="btn ghost" href="{{ url_for('ops.session_new', pid=p.id) }}">Upload a session</a>
+  <a class="btn ghost" href="{{ url_for('ops.ticket_new') }}">Report a problem</a>
+</p>
+{% endif %}
+{% endblock %}

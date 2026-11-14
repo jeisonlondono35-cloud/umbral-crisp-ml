@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>Inference history</h1>
+<p class="lead">Every time the model runs: date, user, model, version, result and response time.
+{% if not current_user.staff %}You see the inferences about your own player profile.{% endif %}</p>
+<p class="row"><a class="btn small {{ '' if not kind else 'ghost' }}" href="{{ url_for('ops.inferences') }}">All</a>
+<a class="btn small {{ '' if kind == 'session_profile' else 'ghost' }}" href="{{ url_for('ops.inferences', kind='session_profile') }}">Next action</a>
+<a class="btn small {{ '' if kind == 'hit' else 'ghost' }}" href="{{ url_for('ops.inferences', kind='hit') }}">Hit</a></p>
+<div class="scroll"><table>
+<tr><th>Date (UTC)</th><th>User</th><th>Session</th><th>Model</th><th>Version</th><th>Result</th><th class="r">Real vs predicted</th><th class="r">ms</th></tr>
+{% for i in rows %}<tr><td>{{ m.dt(i.created_at) }}</td><td>{{ i.user.username if i.user else '-' }}</td>
+<td>{% if i.session_id %}<a href="{{ url_for('ops.session', sid=i.session_id) }}">#{{ i.session_id }}</a>{% else %}API{% endif %}</td>
+<td>{{ i.model_name }}</td><td><code>{{ i.model_version }}</code></td><td>{{ i.result }}</td>
+<td class="r">{% if i.n_checked %}{{ i.n_correct }}/{{ i.n_checked }}{% else %}-{% endif %}</td><td class="r">{{ '%.1f'|format(i.latency_ms) }}</td></tr>
+{% else %}<tr><td colspan="8" class="muted">No inferences yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

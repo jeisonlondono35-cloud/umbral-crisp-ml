@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_from_directory, url_for
+from flask_login import current_user, login_required
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -25,6 +26,14 @@ from src.umbral_ml.config import (ACTIONS, ACTION_LABEL, DIFFS, FIG, HIT_X, MODE
                                   PROC, REPORTS, WORLDS)
 
 app = Flask(__name__)
+
+# Activity 2: the information system (database, accounts, roles, business processes, model in the workflow)
+from app.system import init_system, log_error  # noqa: E402
+from app.system import ml_service as MLS  # noqa: E402
+from app.system.auth import role_required  # noqa: E402
+from app.system.models import db as _db  # noqa: E402
+
+init_system(app)
 
 
 def _warm_up() -> None:
@@ -40,6 +49,7 @@ def _warm_up() -> None:
 
 _warm_up()
 LIVE_LOG = MON / "live_predictions.jsonl"
+REPORT2 = "R3 Activity 2 From traces to decisions.pdf"
 FEEDBACK = MON / "feedback.jsonl"
 
 PHASES = [
@@ -73,6 +83,13 @@ def ctx() -> dict:
             "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists()}
 
 
+@app.context_processor
+def base_ctx():
+    """What base.html needs on EVERY page (the system pages do not pass the CRISP-ML context)."""
+    return {"PHASES": PHASES, "R": _json(REPORTS / "results.json"), "D": _json(PROC / "data_report.json"),
+            "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists(), "has_pdf2": (REPORTS / REPORT2).exists()}
+
+
 @app.template_filter("pct")
 def pct(v, d=1):
     return "-" if v is None else f"{100 * float(v):.{d}f}%"
@@ -92,6 +109,7 @@ def on_error(e):
         return e
     import traceback
     traceback.print_exc()
+    log_error(e)                       # Activity 2: errors are also kept in the database (monitoring page)
     if request.path.startswith("/api/"):
         return jsonify({"error": "internal", "type": type(e).__name__, "detail": str(e)[:300]}), 500
     return render_template("base.html", title="Error", **ctx()).replace(
@@ -119,6 +137,11 @@ def figure(name):
 @app.route("/report.pdf")
 def report_pdf():
     return send_from_directory(REPORTS, "R3A2 Traces in data.pdf", download_name="R3A2 Traces in data.pdf")
+
+
+@app.route("/report-activity2.pdf")
+def report2_pdf():
+    return send_from_directory(REPORTS, REPORT2, download_name=REPORT2)
 
 
 @app.route("/experiments.csv")
@@ -159,7 +182,15 @@ def _next_input(d: dict) -> tuple[list[str], dict]:
     return hist, c
 
 
+def _db_log(kind: str, model: str, inp: dict, out: dict, result: str, ms: float) -> None:
+    """Activity 2: every API inference is stored with date, user, model version, result and latency."""
+    MLS._log(kind, current_user.id, None, None, model, inp, {k: v for k, v in out.items() if k != "features"},
+             result, ms)
+    _db.session.commit()
+
+
 @app.route("/api/predict/next", methods=["POST"])
+@login_required
 def api_next():
     try:
         hist, c = _next_input(request.get_json(force=True, silent=True) or request.form.to_dict())
@@ -169,7 +200,9 @@ def api_next():
     out = P.predict_next(hist, c)
     ms = 1000 * (time.perf_counter() - t)
     _log("next_action", {"history": hist, **c}, out, ms)
-    return jsonify({**out, "latency_ms": round(ms, 2)})
+    _db_log("next_action", out["model"], {"history": hist, **c}, out,
+            f"{out['prediction']} {out['probability']:.0%}", ms)
+    return jsonify({**out, "latency_ms": round(ms, 2), "model_version": MLS.model_version()})
 
 
 def _hit_input(d: dict) -> tuple[str, dict, dict]:
@@ -183,16 +216,19 @@ def _hit_input(d: dict) -> tuple[str, dict, dict]:
 
 
 @app.route("/api/predict/hit", methods=["POST"])
+@login_required
 def api_hit():
     move, x, c = _hit_input(request.get_json(force=True, silent=True) or request.form.to_dict())
     t = time.perf_counter()
     out = P.predict_hit(move, x, c)
     ms = 1000 * (time.perf_counter() - t)
     _log("hit", {"move": move, **x, **c}, out, ms)
-    return jsonify({**out, "latency_ms": round(ms, 2)})
+    _db_log("hit", out["model"], {"move": move, **x, **c}, out, f"{move} hits {out['p_hit']:.0%}", ms)
+    return jsonify({**out, "latency_ms": round(ms, 2), "model_version": MLS.model_version()})
 
 
 @app.route("/api/predict/dodge", methods=["POST"])
+@login_required
 def api_dodge():
     d = request.get_json(force=True, silent=True) or {}
     hist = [(float(a), float(b)) for a, b in d.get("history", [])]
@@ -204,7 +240,15 @@ def api_dodge():
 @app.route("/api/health")
 def health():
     card = _json(MODELS / "model_card.json")
-    return jsonify({"status": "ok", "data_source": card.get("source"), "trained_at": card.get("trained_at"),
+    try:
+        _db.session.execute(_db.text("select 1"))
+        dbok = "ok"
+    except Exception as e:  # noqa: BLE001
+        dbok = f"error: {type(e).__name__}"
+    warn = app.config.get("CONFIG_WARNINGS", [])
+    return jsonify({"status": "ok" if dbok == "ok" and not warn else "degraded", "database": dbok,
+                    "database_engine": _db.engine.dialect.name, "config_warnings": warn,
+                    "model_version": MLS.model_version(), "data_source": card.get("source"), "trained_at": card.get("trained_at"),
                     "next_action_model": card.get("next_action", {}).get("model"),
                     "hit_model": card.get("hit", {}).get("model")})
 
@@ -246,6 +290,7 @@ def feedback():
 
 
 @app.route("/monitoring/live")
+@role_required("analyst", "admin")
 def live():
     rows = []
     if LIVE_LOG.exists():

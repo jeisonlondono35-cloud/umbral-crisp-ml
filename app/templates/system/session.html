@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<p class="tag">Play session #{{ s.id }}</p>
+<div class="row"><h1>{{ s.player.gamer_tag }} · {{ MODES[s.mode] }} · {{ WORLDS[s.world] }}</h1>{{ m.st(s.status) }}</div>
+<p class="lead">{{ m.dt(s.played_at) }} · {{ DIFFS[s.difficulty] }} · {{ s.minutes }} min · {{ s.deaths }} deaths
+({{ '%.1f'|format(s.deaths_per_10) }} per 10 min) · {{ OUTCOMES[s.outcome] }} with {{ s.hp_end }} hearts
+{% if s.boss_fight %}· boss fight{% endif %}{% if s.enemy_distance is not none %} · ~{{ s.enemy_distance }} px from the enemy{% endif %}</p>
+{% if s.notes %}<p class="muted">{{ s.notes }}</p>{% endif %}
+<div class="row">
+  {% if current_user.staff and s.status != 'reviewed' %}{{ m.post(url_for('ops.session_analyze', sid=s.id), 'Re-analyze with the model' if s.status == 'analyzed' else 'Analyze with the model', 'btn') }}{% endif %}
+  {% if s.status == 'registered' %}<a class="btn ghost" href="{{ url_for('ops.session_edit', sid=s.id) }}">Edit</a>{% endif %}
+  {% if s.status == 'registered' or current_user.role == 'admin' %}{{ m.post(url_for('ops.session_delete', sid=s.id), 'Delete', 'btn danger', 'Delete this session?') }}{% endif %}
+  <a class="btn ghost" href="{{ url_for('ops.ticket_new', category='model', player=s.player_id) }}">Report an unfair result</a>
+</div>
+
+<h2>Recorded actions ({{ s.action_list|length }})</h2>
+<div class="card"><div class="row" style="gap:4px">{% for a in s.action_list %}<span class="tag">{{ a }}</span>{% endfor %}</div></div>
+
+{% if prof %}
+<h2>Model result</h2>
+<div class="grid">
+  <div class="card"><h3>Predictability</h3><div class="kpi">{{ m.pctv(prof.accuracy) }}</div>
+    <small class="muted">{{ prof_row.n_correct }} of {{ prof_row.n_checked }} next actions guessed before they happened.
+    Baseline (the player's usual action): {{ m.pctv(prof.baseline) }}.</small></div>
+  <div class="card"><h3>Next action</h3><div class="kpi">{{ AL[prof.next] }}</div>
+    <small class="muted">{{ m.pctv(prof.next_proba[prof.next]) }} — what a boss would prepare for right now.</small></div>
+  <div class="card"><h3>Hit risk</h3><div class="kpi">{{ m.pctv(hit.risk) if hit else '-' }}</div>
+    <small class="muted">Mean P(boss attack hits) in this player's usual situation.</small></div>
+</div>
+<div class="two" style="margin-top:14px">
+  <div class="card"><h3>Probability of each next action</h3>{{ m.bars(prof.next_proba, AL) }}</div>
+  {% if hit %}<div class="card"><h3>P(hit) for each guardian attack</h3>{{ m.bars(hit.p_hit, {}) }}
+  <p class="help">Situation built from the session records:
+  {% for k, v in hit_in.situation.items() %}<span class="tag">{{ k }} = {{ v }}</span> {% endfor %}</p></div>{% endif %}
+</div>
+<p class="note"><b>How to read it.</b> Predictability is the share of real actions that the next-action model
+({{ prof_row.model_name }}, version {{ prof_row.model_version }}) guessed BEFORE seeing them. Above the baseline,
+the bosses "read" this player. Hit risk comes from the hit model. <b>Limits:</b> the models were trained on SIMULATED
+players; with fewer than ~30 actions the numbers move a lot; they say nothing about why the player chose an action.</p>
+
+<h2>Decision supported by the model</h2>
+{% if recs %}{% for r in recs %}<div class="card">
+<p><b>{{ r.action|upper }}</b> difficulty: {{ DIFFS[r.current_difficulty] }} → <b>{{ DIFFS[r.suggested_difficulty] }}</b> · {{ m.st(r.status) }}</p>
+<p>{{ r.reason }}</p>
+{% if r.status == 'pending' and current_user.staff %}
+<form method="post" action="{{ url_for('ops.recommendation_decide', rid=r.id) }}" class="row">{{ m.csrf() }}
+  <input name="note" placeholder="Note (required to reject)" style="max-width:420px">
+  <button name="decision" value="approve" class="btn small">Approve and apply</button>
+  <button name="decision" value="reject" class="btn small danger">Reject</button></form>
+{% elif r.decided_at %}<p class="muted">Decided {{ m.dt(r.decided_at) }} by {{ r.decider.username if r.decider else '?' }}{% if r.decision_note %}: {{ r.decision_note }}{% endif %}</p>{% endif %}
+</div>{% endfor %}
+{% else %}<p class="muted">The rule kept the current difficulty for this session.</p>{% endif %}
+<details style="margin-top:10px"><summary>Decision rule (fixed before use)</summary><ul class="tight">{% for line in rule %}<li>{{ line }}</li>{% endfor %}</ul></details>
+{% elif current_user.staff %}
+<p class="note">This session was not analyzed yet. Press <b>Analyze with the model</b>.</p>
+{% else %}
+<p class="note">An analyst will analyze this session with the model soon.</p>
+{% endif %}
+{% endblock %}

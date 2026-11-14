@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<p class="tag">Player profile</p>
+<div class="row"><h1>{{ p.gamer_tag }}</h1>{{ m.st(p.status) }}
+  <span style="margin-left:auto" class="row">
+    <a class="btn ghost small" href="{{ url_for('ops.player_edit', pid=p.id) }}">Edit</a>
+    {% if p.status == 'active' %}<a class="btn small" href="{{ url_for('ops.session_new', pid=p.id) }}">+ Upload session</a>{% endif %}
+  </span></div>
+<p class="lead">{{ CHARACTERS[p.character] }} · plays at <b>{{ DIFFS[p.difficulty] }}</b>{% if p.country %} · {{ p.country }}{% endif %}
+· account {{ p.owner.username if p.owner else '— (profile kept by staff)' }} · since {{ m.dt(p.created_at) }}</p>
+
+<h2>What the model learned about this player</h2>
+{% if prof %}
+<div class="grid">
+  <div class="card"><h3>Predictability</h3><div class="kpi">{{ m.pctv(prof.acc) }}</div>
+    <small class="muted">The bosses guess the next action this often (baseline {{ m.pctv(prof.base) }}), {{ prof.n }} analyzed sessions.</small></div>
+  <div class="card"><h3>Hit risk</h3><div class="kpi">{{ m.pctv(prof.risk) }}</div>
+    <small class="muted">Mean probability that a boss attack hits this player in their usual situation.</small></div>
+  <div class="card"><h3>Action mix</h3>{{ m.bars(prof.share, AL) }}</div>
+</div>
+<p class="help">Meaning and limits: these numbers come from the models of Activity 1 (trained on SIMULATED players).
+They describe habits in combat, not skill; a high predictability means the bosses can feint or wait for the usual
+action more often. Use them to decide the difficulty together with deaths and results, never alone.</p>
+{% else %}<p class="muted">No analyzed sessions yet.</p>{% endif %}
+
+<h2 id="recs">Difficulty decisions</h2>
+{% if p.recommendations %}<table><tr><th>Date</th><th>Change</th><th>Why (model)</th><th>Status</th><th>Result after the change</th></tr>
+{% for r in p.recommendations %}<tr><td>{{ m.dt(r.created_at) }}</td><td>{{ DIFFS[r.current_difficulty] }} → <b>{{ DIFFS[r.suggested_difficulty] }}</b></td>
+<td>{{ r.reason }}{% if r.decision_note %}<br><small class="muted">Note: {{ r.decision_note }}</small>{% endif %}</td><td>{{ m.st(r.status) }}</td>
+<td>{% if r.effective is not none %}{{ '%.1f'|format(r.before_deaths10) }} → {{ '%.1f'|format(r.after_deaths10) }} deaths/10 min · {{ m.st('resolved' if r.effective else 'rejected', 'worked' if r.effective else 'did not work') }}{% elif r.status == 'applied' %}<span class="muted">waiting for the next session</span>{% else %}-{% endif %}</td></tr>{% endfor %}</table>
+{% else %}<p class="muted">No recommendations yet.</p>{% endif %}
+
+<h2 id="saves">Saved games</h2>
+<p><a class="btn small" href="{{ url_for('ops.save_new', pid=p.id) }}">+ Saved game</a></p>
+<table><tr><th>Slot</th><th>World</th><th class="r">Play time</th><th class="r">Stars</th><th class="r">Relics</th><th class="r">Diary</th><th>Difficulty</th><th>Updated</th><th></th></tr>
+{% for s in p.saves %}<tr><td>{{ 'AUTO' if s.slot == 0 else s.slot }}</td><td>{{ WORLDS[s.world] }}</td><td class="r">{{ s.play_minutes // 60 }} h {{ s.play_minutes % 60 }} m</td>
+<td class="r">{{ s.stars }}/80</td><td class="r">{{ s.relics }}/5</td><td class="r">{{ s.diary_pages }}/15</td><td>{{ DIFFS[s.difficulty] }}</td><td>{{ m.dt(s.updated_at) }}</td>
+<td class="actions"><a href="{{ url_for('ops.save_edit', sid=s.id) }}">Edit</a> {{ m.post(url_for('ops.save_delete', sid=s.id), 'Delete', 'btn small danger', 'Delete this saved game?') }}</td></tr>
+{% else %}<tr><td colspan="9" class="muted">No saved games.</td></tr>{% endfor %}</table>
+
+<h2 id="sessions">Play sessions</h2>
+<table><tr><th>#</th><th>Played</th><th>Mode · world</th><th>Difficulty</th><th class="r">Min</th><th class="r">Deaths</th><th>Result</th><th class="r">Predictability</th><th class="r">Hit risk</th><th>Status</th></tr>
+{% for s in p.sessions %}<tr><td><a href="{{ url_for('ops.session', sid=s.id) }}">#{{ s.id }}</a></td><td>{{ m.dt(s.played_at) }}</td><td>{{ MODES[s.mode] }} · {{ WORLDS[s.world] }}</td>
+<td>{{ DIFFS[s.difficulty] }}</td><td class="r">{{ s.minutes }}</td><td class="r">{{ s.deaths }}</td><td>{{ OUTCOMES[s.outcome] }}</td>
+<td class="r">{{ m.pctv(s.predictability) }}</td><td class="r">{{ m.pctv(s.risk) }}</td><td>{{ m.st(s.status) }}</td></tr>
+{% else %}<tr><td colspan="10" class="muted">No sessions.</td></tr>{% endfor %}</table>
+
+<h2 id="records">Records</h2>
+<form method="post" action="{{ url_for('ops.record_new', pid=p.id) }}" class="row">{{ m.csrf() }}
+  <select name="mode" style="max-width:240px">{% for k, v in RECORD_MODES.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+  <input name="value" type="number" min="1" placeholder="Value" style="max-width:120px" required><button class="btn small">Send record</button></form>
+<table style="margin-top:8px"><tr><th>Type</th><th class="r">Value</th><th>Date</th><th>Verified</th><th></th></tr>
+{% for r in p.records|sort(attribute='achieved_at', reverse=true) %}<tr><td>{{ RECORD_MODES[r.mode] }}{% if best.get(r.mode) == r %} ★{% endif %}</td><td class="r">{{ r.value }}</td><td>{{ m.dt(r.achieved_at) }}</td>
+<td>{{ m.st('resolved', 'verified') if r.verified else m.st('pending', 'waiting') }}</td>
+<td>{% if not r.verified or current_user.staff %}{{ m.post(url_for('ops.record_delete', rid=r.id), 'Remove', 'btn small danger', 'Remove this record?') }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">No records.</td></tr>{% endfor %}</table>
+
+{% if current_user.role == 'admin' %}
+<h2>Delete player</h2>
+<form method="post" action="{{ url_for('ops.player_delete', pid=p.id) }}" class="row">{{ m.csrf() }}
+<input name="confirm" placeholder="Type {{ p.gamer_tag }} to confirm" style="max-width:280px"><button class="btn small danger">Delete player and all data</button></form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<div style="max-width:520px;margin:30px auto">
+<h1>Create a player account</h1>
+<p class="lead">You get a PLAYER account: you can see and manage only your own profile, saved games, sessions,
+records and tickets. Staff roles are assigned by an administrator.</p>
+<form method="post" class="card">{{ m.csrf() }}
+  <label>User name (to sign in)</label><input name="username" value="{{ form.username }}" required pattern="[a-z0-9_]{3,20}" autocomplete="username">
+  <p class="help">3-20 lowercase letters, numbers or _.</p>
+  <label>Name other people see</label><input name="display_name" value="{{ form.display_name }}" required maxlength="40">
+  <label>Gamer tag (your player profile)</label><input name="gamer_tag" value="{{ form.gamer_tag }}" required pattern="[A-Za-z0-9_]{3,20}">
+  <label>Character</label><select name="character">{% for k, v in CHARACTERS.items() %}<option value="{{ k }}" {{ 'selected' if form.character == k }}>{{ v }}</option>{% endfor %}</select>
+  <label>Password</label><input name="password" type="password" required minlength="8" autocomplete="new-password">
+  <p class="help">At least 8 characters, with letters and numbers. It is stored only as a salted scrypt hash.</p>
+  <label>Repeat the password</label><input name="password2" type="password" required minlength="8" autocomplete="new-password">
+  <button>Create account</button>
+</form>
+</div>
+{% endblock %}

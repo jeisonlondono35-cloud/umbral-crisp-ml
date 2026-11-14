@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<p class="tag">Ticket #{{ t.id }} · {{ TICKET_CATEGORY[t.category] }} · {{ TICKET_SEVERITY[t.severity] }}</p>
+<div class="row"><h1>{{ t.title }}</h1>{{ m.st(t.status) }}</div>
+<p class="muted">By {{ t.author.username }} on {{ m.dt(t.created_at) }}{% if t.player %} · player <a href="{{ url_for('ops.player', pid=t.player_id) }}">{{ t.player.gamer_tag }}</a>{% endif %}
+{% if t.rating %} · score {{ t.rating }}/5{% endif %}{% if t.assignee %} · assigned to {{ t.assignee.username }}{% endif %}</p>
+<div class="card"><p style="white-space:pre-wrap;margin:0">{{ t.description }}</p></div>
+{% if t.resolution %}<h3>Resolution</h3><div class="card"><p style="white-space:pre-wrap;margin:0">{{ t.resolution }}</p></div>{% endif %}
+{% if current_user.staff and flow[t.status] %}
+<h2>Manage</h2>
+<form method="post" class="card" style="max-width:640px">{{ m.csrf() }}
+  <label>Next status</label><select name="status"><option value="{{ t.status }}">{{ t.status }} (keep)</option>{% for v in flow[t.status] %}<option value="{{ v }}">{{ v|replace('_', ' ') }}</option>{% endfor %}</select>
+  <label>Resolution (required to resolve)</label><textarea name="resolution" rows="3" maxlength="500">{{ t.resolution or '' }}</textarea>
+  <label><input type="checkbox" name="assign_me" {{ 'checked' if not t.assigned_to }}> Assign to me</label>
+  <button>Update</button>
+</form>
+{% endif %}
+<p><a href="{{ url_for('ops.tickets') }}">← All tickets</a></p>
+{% endblock %}

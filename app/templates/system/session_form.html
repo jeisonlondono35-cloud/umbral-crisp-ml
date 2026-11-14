@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>{{ title }} · {{ p.gamer_tag }}</h1>
+<p class="lead">The combat actions are the INPUT of the model, in the same format used to train it (Activity 1):
+the six game actions, oldest first. In the game they come from the anonymous play log.</p>
+<form method="post" class="card" style="max-width:900px">{{ m.csrf() }}
+<div class="form-grid">
+  <div><label>Date and time</label><input name="played_at" type="datetime-local" value="{{ s.played_at.strftime('%Y-%m-%dT%H:%M') if s.played_at else '' }}"></div>
+  <div><label>Mode</label><select name="mode">{% for k, v in MODES.items() %}<option value="{{ k }}" {{ 'selected' if s.mode == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>World</label><select name="world">{% for k, v in WORLDS.items() %}<option value="{{ k }}" {{ 'selected' if s.world == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Difficulty played</label><select name="difficulty">{% for k, v in DIFFS.items() %}<option value="{{ k }}" {{ 'selected' if s.difficulty == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Minutes played</label><input name="minutes" type="number" min="1" max="600" value="{{ s.minutes }}" required></div>
+  <div><label>Deaths</label><input name="deaths" type="number" min="0" max="500" value="{{ s.deaths }}" required></div>
+  <div><label>Result</label><select name="outcome">{% for k, v in OUTCOMES.items() %}<option value="{{ k }}" {{ 'selected' if s.outcome == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Hearts at the end</label><input name="hp_end" type="number" min="0" max="12" value="{{ s.hp_end }}" required></div>
+  <div><label>Typical distance to the enemy (px, optional)</label><input name="enemy_distance" type="number" min="0" max="400" value="{{ s.enemy_distance if s.enemy_distance is not none else '' }}"></div>
+  <div><label><input type="checkbox" name="boss_fight" {{ 'checked' if s.boss_fight }}> It was a boss fight</label></div>
+</div>
+<label>Combat actions, oldest first (comma separated: {{ ACTIONS|join(', ') }}) · 5 to 400</label>
+<textarea name="actions" rows="5" required placeholder="shoot, shoot, dodge, melee, block, shoot, ...">{{ s.actions|replace(',', ', ') }}</textarea>
+<label>Notes (optional)</label><input name="notes" maxlength="300" value="{{ s.notes or '' }}">
+<button>Save session</button> <a href="{{ url_for('ops.player', pid=p.id) }}">Cancel</a>
+</form>
+{% endblock %}

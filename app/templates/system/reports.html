@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<div class="row"><h1>Reports and indicators</h1><a class="btn ghost" style="margin-left:auto" href="{{ url_for('ops.sessions_csv') }}">Download sessions (CSV)</a></div>
+<h2>Sessions by difficulty</h2>
+<table><tr><th>Difficulty</th><th class="r">Sessions</th><th class="r">Deaths / 10 min</th><th class="r">Win rate</th><th class="r">Model accuracy</th><th class="r">Players at this level now</th></tr>
+{% for k, v in d.by_diff.items() %}<tr><td>{{ DIFFS[k] }}</td><td class="r">{{ v.n }}</td><td class="r">{{ '-' if v.deaths10 is none else '%.1f'|format(v.deaths10) }}</td>
+<td class="r">{{ m.pctv(v.win) }}</td><td class="r">{{ m.pctv(v.acc) }}</td><td class="r">{{ d.players_by_diff.get(k, 0) }}</td></tr>{% endfor %}</table>
+<p class="help">Weekly check asked by the domain expert (Activity 1, Phase 4): if one difficulty has many more deaths or a much
+higher model accuracy than the others, the bosses may feel unfair there.</p>
+<h2>Sessions by world</h2>
+<table><tr><th>World</th><th class="r">Sessions</th><th class="r">Deaths / 10 min</th><th class="r">Win rate</th><th class="r">Model accuracy</th></tr>
+{% for k, v in d.by_world.items() %}<tr><td>{{ WORLDS[k] }}</td><td class="r">{{ v.n }}</td><td class="r">{{ '-' if v.deaths10 is none else '%.1f'|format(v.deaths10) }}</td>
+<td class="r">{{ m.pctv(v.win) }}</td><td class="r">{{ m.pctv(v.acc) }}</td></tr>{% endfor %}</table>
+<div class="two">
+<div><h2>Recommendations</h2>
+<table><tr><th>Status</th><th class="r">Count</th></tr>{% for k in ('pending', 'applied', 'rejected') %}<tr><td>{{ k }}</td><td class="r">{{ d.rec_status.get(k, 0) }}</td></tr>{% endfor %}
+<tr><td>Lower / raise proposed</td><td class="r">{{ d.rec_actions.get('lower', 0) }} / {{ d.rec_actions.get('raise', 0) }}</td></tr>
+<tr><td><b>Changes that worked</b> (checked with the next session)</td><td class="r">{{ d.effective[0] }} of {{ d.effective[1] }}</td></tr></table></div>
+<div><h2>Support</h2>
+<table><tr><th>Status</th><th class="r">Tickets</th></tr>{% for k in ('open', 'in_progress', 'resolved', 'closed') %}<tr><td>{{ k|replace('_', ' ') }}</td><td class="r">{{ d.tickets.get(k, 0) }}</td></tr>{% endfor %}
+<tr><td>Mean opinion score</td><td class="r">{{ '-' if d.rating is none else '%.1f / 5'|format(d.rating) }} ({{ d.n_ratings }})</td></tr></table></div>
+</div>
+{% endblock %}

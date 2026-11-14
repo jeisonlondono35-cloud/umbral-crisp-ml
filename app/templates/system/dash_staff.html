@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<p class="tag">{{ ROLE_LABEL[current_user.role] }}</p>
+<h1>Dashboard</h1>
+<p class="lead">Work queue of the process: sessions waiting for the model, and model recommendations waiting for a decision.</p>
+<div class="grid">
+  <div class="card"><h3>Players</h3><div class="kpi">{{ kpi.players }}</div></div>
+  <div class="card"><h3>Sessions</h3><div class="kpi">{{ kpi.sessions }}</div><small class="muted">{{ kpi.sessions_week }} in the last 7 days</small></div>
+  <div class="card"><h3>To analyze</h3><div class="kpi">{{ kpi.to_analyze }}</div></div>
+  <div class="card"><h3>Pending decisions</h3><div class="kpi">{{ kpi.pending }}</div></div>
+  <div class="card"><h3>Open tickets</h3><div class="kpi">{{ kpi.open_tickets }}</div></div>
+  <div class="card"><h3>Model accuracy in use</h3><div class="kpi">{{ m.pctv(kpi.live_acc) }}</div><small class="muted">next action, all analyzed sessions</small></div>
+</div>
+<div class="two" style="margin-top:18px">
+<div class="card"><h3>Sessions waiting for the model</h3>
+{% if queue %}<table><tr><th>Session</th><th>Player</th><th>Played</th><th></th></tr>
+{% for s in queue %}<tr><td><a href="{{ url_for('ops.session', sid=s.id) }}">#{{ s.id }}</a> · {{ MODES[s.mode] }} · {{ WORLDS[s.world] }}</td><td>{{ s.player.gamer_tag }}</td><td>{{ m.dt(s.played_at) }}</td>
+<td>{{ m.post(url_for('ops.session_analyze', sid=s.id), 'Analyze') }}</td></tr>{% endfor %}</table>
+{% else %}<p class="muted">Nothing to analyze.</p>{% endif %}</div>
+<div class="card"><h3>Recommendations waiting for a decision</h3>
+{% if recs %}<table><tr><th>Player</th><th>Change</th><th></th></tr>
+{% for r in recs %}<tr><td><a href="{{ url_for('ops.player', pid=r.player_id) }}">{{ r.player.gamer_tag }}</a></td><td>{{ DIFFS[r.current_difficulty] }} → <b>{{ DIFFS[r.suggested_difficulty] }}</b></td>
+<td><a href="{{ url_for('ops.recommendations') }}">Decide</a></td></tr>{% endfor %}</table>
+{% else %}<p class="muted">No pending decisions.</p>{% endif %}</div>
+</div>
+{% endblock %}

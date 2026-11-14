@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>New ticket</h1>
+<form method="post" class="card" style="max-width:720px">{{ m.csrf() }}
+<input type="hidden" name="player_id" value="{{ form.player_id }}">
+<div class="form-grid">
+  <div><label>Category</label><select name="category">{% for k, v in TICKET_CATEGORY.items() %}<option value="{{ k }}" {{ 'selected' if form.category == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Severity</label><select name="severity">{% for k, v in TICKET_SEVERITY.items() %}<option value="{{ k }}" {{ 'selected' if form.severity == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Score 1-5 (required for an opinion)</label><input name="rating" type="number" min="1" max="5" value="{{ form.rating }}"></div>
+</div>
+<label>Title</label><input name="title" value="{{ form.title }}" required minlength="5" maxlength="120">
+<label>What happened? (steps, what you expected, device)</label><textarea name="description" rows="6" required minlength="10" maxlength="4000">{{ form.description }}</textarea>
+<p class="help">High severity = the system or the game does not work; the team answers the same day (see the incident procedure in the user manual).</p>
+<button>Send</button> <a href="{{ url_for('ops.tickets') }}">Cancel</a>
+</form>
+{% endblock %}

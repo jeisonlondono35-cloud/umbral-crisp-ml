@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>{{ title }}</h1>
+<form method="post" class="card" style="max-width:640px">{{ m.csrf() }}
+<div class="form-grid">
+  {% if staff %}
+  <div><label>Gamer tag</label><input name="gamer_tag" value="{{ p.gamer_tag or '' }}" required pattern="[A-Za-z0-9_]{3,20}"></div>
+  <div><label>Status</label><select name="status">{% for v in ('active', 'suspended') %}<option {{ 'selected' if p.status == v }}>{{ v }}</option>{% endfor %}</select></div>
+  {% if not p.id %}<div><label>Starting difficulty</label><select name="difficulty">{% for k, v in DIFFS.items() %}<option value="{{ k }}" {{ 'selected' if p.difficulty == k }}>{{ v }}</option>{% endfor %}</select></div>{% endif %}
+  {% endif %}
+  <div><label>Character</label><select name="character">{% for k, v in CHARACTERS.items() %}<option value="{{ k }}" {{ 'selected' if p.character == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Country (optional)</label><input name="country" value="{{ p.country or '' }}" maxlength="40"></div>
+</div>
+{% if p.id %}<p class="help">Business rule: the difficulty of an existing account changes only through an approved model recommendation (Recommendations), so every change is traceable to a model result.</p>{% endif %}
+<button>Save</button> <a href="{{ url_for('ops.player', pid=p.id) if p.id else url_for('ops.players') }}">Cancel</a>
+</form>
+{% endblock %}

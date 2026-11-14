@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<div class="row"><h1>Support and feedback</h1><a class="btn" style="margin-left:auto" href="{{ url_for('ops.ticket_new') }}">+ New ticket</a></div>
+<p class="lead">Incidents, account problems, unfair model results and opinions. Flow: open → in progress → resolved → closed.
+{% if not current_user.staff %}You see only your tickets.{% endif %}</p>
+<p class="row"><a class="btn small {{ '' if not st else 'ghost' }}" href="{{ url_for('ops.tickets') }}">All</a>{% for v in ('open', 'in_progress', 'resolved', 'closed') %}<a class="btn small {{ '' if st == v else 'ghost' }}" href="{{ url_for('ops.tickets', status=v) }}">{{ v|replace('_', ' ') }}</a>{% endfor %}</p>
+<table><tr><th>#</th><th>Title</th><th>Category</th><th>Severity</th><th>Author</th><th>Updated</th><th>Status</th></tr>
+{% for t in rows %}<tr><td><a href="{{ url_for('ops.ticket', tid=t.id) }}">#{{ t.id }}</a></td><td>{{ t.title }}</td><td>{{ TICKET_CATEGORY[t.category] }}</td>
+<td>{{ TICKET_SEVERITY[t.severity] }}</td><td>{{ t.author.username }}</td><td>{{ m.dt(t.updated_at) }}</td><td>{{ m.st(t.status) }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">No tickets.</td></tr>{% endfor %}</table>
+{% endblock %}

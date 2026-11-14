@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<div style="max-width:420px;margin:30px auto">
+<h1>Sign in</h1>
+<p class="lead">The operational modules of the UMBRAL information system (players, sessions, the model in the
+workflow, reports) need an account. The project documentation stays public.</p>
+<form method="post" class="card">{{ m.csrf() }}
+  <label for="u">User name</label><input id="u" name="username" autocomplete="username" required autofocus>
+  <label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>
+  <button>Sign in</button>
+</form>
+<p class="muted">No account? <a href="{{ url_for('auth.register') }}">Create a player account</a>. Analyst and
+administrator accounts are given by an administrator.</p>
+</div>
+{% endblock %}

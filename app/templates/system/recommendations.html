@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>Difficulty recommendations</h1>
+<p class="lead">The model proposes, a person decides. Approving changes the player's account difficulty; the next
+analyzed session of that player says if the change worked.</p>
+<p class="row">{% for v in ('pending', 'applied', 'rejected', 'all') %}<a class="btn small {{ '' if st == v else 'ghost' }}" href="{{ url_for('ops.recommendations', status=v) }}">{{ v|capitalize }}</a>{% endfor %}</p>
+<div class="scroll"><table>
+<tr><th>Date</th><th>Player</th><th>Session</th><th>Change</th><th>Reason given by the model</th><th>Status</th><th>Decision</th></tr>
+{% for r in rows %}<tr><td>{{ m.dt(r.created_at) }}</td><td><a href="{{ url_for('ops.player', pid=r.player_id) }}">{{ r.player.gamer_tag }}</a></td>
+<td>{% if r.session_id %}<a href="{{ url_for('ops.session', sid=r.session_id) }}">#{{ r.session_id }}</a>{% endif %}</td>
+<td>{{ DIFFS[r.current_difficulty] }} → <b>{{ DIFFS[r.suggested_difficulty] }}</b></td><td>{{ r.reason }}</td><td>{{ m.st(r.status) }}</td>
+<td>{% if r.status == 'pending' %}
+<form method="post" action="{{ url_for('ops.recommendation_decide', rid=r.id) }}">{{ m.csrf() }}
+  <input name="note" placeholder="Note (required to reject)">
+  <div class="row" style="margin-top:4px"><button name="decision" value="approve" class="btn small">Approve</button>
+  <button name="decision" value="reject" class="btn small danger">Reject</button></div></form>
+{% else %}{{ r.decider.username if r.decider else '' }} {{ m.dt(r.decided_at) }}{% if r.decision_note %}<br><small class="muted">{{ r.decision_note }}</small>{% endif %}
+{% if r.effective is not none %}<br>{{ m.st('resolved' if r.effective else 'rejected', 'worked' if r.effective else 'did not work') }}{% endif %}{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">Nothing here.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

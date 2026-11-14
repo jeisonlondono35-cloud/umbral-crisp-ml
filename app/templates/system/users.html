@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>Users and roles</h1>
+<p class="lead">Only administrators see this page. Public registration always creates players; here a player can be
+promoted. You cannot change your own role, and the system always keeps one active administrator.</p>
+<div class="scroll"><table>
+<tr><th>User</th><th>Name</th><th>Player</th><th>Created</th><th>Last sign-in</th><th>Role and state</th></tr>
+{% for u in rows %}<tr><td>{{ u.username }}</td><td>{{ u.display_name }}</td><td>{% if u.player %}<a href="{{ url_for('ops.player', pid=u.player.id) }}">{{ u.player.gamer_tag }}</a>{% endif %}</td>
+<td>{{ m.dt(u.created_at) }}</td><td>{{ m.dt(u.last_login) }}</td>
+<td>{% if u.id == current_user.id %}{{ ROLE_LABEL[u.role] }} (you){% else %}
+<form method="post" action="{{ url_for('ops.user_update', uid=u.id) }}" class="row" style="gap:6px">{{ m.csrf() }}
+<select name="role" style="width:auto">{% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ ROLE_LABEL[r] }}</option>{% endfor %}</select>
+<select name="active" style="width:auto"><option value="1" {{ 'selected' if u.active }}>active</option><option value="0" {{ 'selected' if not u.active }}>disabled</option></select>
+<button class="btn small">Save</button></form>{% endif %}</td></tr>{% endfor %}
+</table></div>
+<h2>Audit log (last 40)</h2>
+<table><tr><th>Date</th><th>User</th><th>Event</th><th>Detail</th></tr>
+{% for e in events %}<tr><td>{{ m.dt(e.created_at) }}</td><td>{{ names.get(e.user_id, '-') }}</td><td>{{ e.event }}</td><td>{{ e.detail }}</td></tr>{% endfor %}</table>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<div class="row"><h1>Players</h1><a class="btn" style="margin-left:auto" href="{{ url_for('ops.player_new') }}">+ New player</a></div>
+<form class="row" method="get"><input name="q" value="{{ q }}" placeholder="Search by gamer tag" style="max-width:280px"><button class="btn small">Search</button></form>
+<div class="scroll" style="margin-top:12px"><table>
+<tr><th>Gamer tag</th><th>Character</th><th>Difficulty</th><th>Account</th><th class="r">Sessions</th><th>Status</th><th>Created</th></tr>
+{% for p in rows %}<tr><td><a href="{{ url_for('ops.player', pid=p.id) }}">{{ p.gamer_tag }}</a></td><td>{{ CHARACTERS[p.character] }}</td>
+<td>{{ DIFFS[p.difficulty] }}</td><td>{{ p.owner.username if p.owner else '— (staff profile)' }}</td><td class="r">{{ stats.get(p.id, 0) }}</td>
+<td>{{ m.st(p.status) }}</td><td>{{ m.dt(p.created_at) }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">No players.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

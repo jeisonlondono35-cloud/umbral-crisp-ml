@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 monitoring/live_predictions.jsonl
 reports/_crops/
+instance/
+*.db
+.env

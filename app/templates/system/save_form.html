@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>Saved game · {{ p.gamer_tag }}</h1>
+<form method="post" class="card" style="max-width:700px">{{ m.csrf() }}
+<div class="form-grid">
+  <div><label>Slot (0 = AUTO, 1-24 windows)</label><input name="slot" type="number" min="0" max="24" value="{{ s.slot }}" required></div>
+  <div><label>World reached</label><select name="world">{% for k, v in WORLDS.items() %}<option value="{{ k }}" {{ 'selected' if s.world == k }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Play time (minutes)</label><input name="play_minutes" type="number" min="0" value="{{ s.play_minutes }}" required></div>
+  <div><label>Stars (0-80)</label><input name="stars" type="number" min="0" max="80" value="{{ s.stars }}" required></div>
+  <div><label>Relics (0-5)</label><input name="relics" type="number" min="0" max="5" value="{{ s.relics }}" required></div>
+  <div><label>Diary pages (0-15)</label><input name="diary_pages" type="number" min="0" max="15" value="{{ s.diary_pages }}" required></div>
+  <div><label>Difficulty</label><select name="difficulty">{% for k, v in DIFFS.items() %}<option value="{{ k }}" {{ 'selected' if s.difficulty == k }}>{{ v }}</option>{% endfor %}</select></div>
+</div>
+<p class="help">Rules: one slot per saved game; relics ≤ world reached; at most 16 stars per world.</p>
+<button>Save</button> <a href="{{ url_for('ops.player', pid=p.id) }}#saves">Cancel</a>
+</form>
+{% endblock %}

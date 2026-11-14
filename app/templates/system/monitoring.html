@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% import "system/_m.html" as mm %}
+{% block body %}
+<div class="row"><h1>Model monitoring</h1><a class="btn ghost" style="margin-left:auto" href="{{ url_for('ops.monitoring_json') }}">JSON</a></div>
+<p class="lead">Model in service: <b>{{ m.card.next_action.model }}</b> (next action) and <b>{{ m.card.hit.model }}</b> (hit),
+version <code>{{ m.version }}</code>, data source <b>{{ m.card.source }}</b>. Same indicators and alarm lines as Phase 6 of Activity 1.</p>
+<div class="grid">
+  <div class="card"><h3>Inferences</h3><div class="kpi">{{ m.n }}</div></div>
+  <div class="card"><h3>Response time</h3><div class="kpi">{{ '-' if m.mean is none else '%.0f ms'|format(m.mean) }}</div><small class="muted">p95 {{ '-' if m.p95 is none else '%.0f ms'|format(m.p95) }} · {{ m.slow }} over 1 s (one call = a whole session)</small></div>
+  <div class="card"><h3>Errors logged</h3><div class="kpi">{{ m.n_errors }}</div></div>
+  <div class="card"><h3>Data drift (PSI, 30 days)</h3><div class="kpi">{{ '-' if m.psi is none else '%.3f'|format(m.psi) }}</div>
+    <small>{{ mm.st('resolved' if m.psi_state == 'OK' else 'pending' if m.psi_state == 'WARNING' else 'rejected', m.psi_state) if m.psi is not none else 'needs 200+ actions' }} · warning 0.1, alarm 0.2</small></div>
+  <div class="card"><h3>Difficulty changes that worked</h3><div class="kpi">{{ m.effective[0] }}/{{ m.effective[1] }}</div></div>
+</div>
+
+<h2>Predictions compared with what really happened</h2>
+<p>Each analyzed session checks every prediction of the next action against the REAL next action of the player.
+Alarm: a week 5 points below the mean of the first three weeks ({{ mm.pctv(m.base) }}).</p>
+<table><tr><th>Week</th><th class="r">Predictions checked</th><th class="r">Accuracy</th><th>State</th></tr>
+{% for w in m.weeks %}<tr><td>{{ w.week }}</td><td class="r">{{ w.n }}</td><td class="r">{{ mm.pctv(w.acc) }}</td><td>{{ mm.st('rejected', 'RETRAIN') if w.alarm else mm.st('resolved', 'OK') }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No analyzed sessions yet.</td></tr>{% endfor %}</table>
+
+<h2>Input data: training vs. last 30 days</h2>
+<table><tr><th>Action</th><th class="r">Training share</th><th class="r">Last 30 days ({{ m.n_actions }} actions)</th></tr>
+{% for a in ACTIONS %}<tr><td>{{ AL[a] }}</td><td class="r">{{ mm.pctv(m.ref[a]) }}</td><td class="r">{{ mm.pctv(m.cur[a]) if m.cur else '-' }}</td></tr>{% endfor %}</table>
+
+<h2>Model versions used</h2>
+<table><tr><th>Version (source + training date)</th><th class="r">Inferences</th><th>First</th><th>Last</th></tr>
+{% for v, n, a, b in m.versions %}<tr><td><code>{{ v }}</code></td><td class="r">{{ n }}</td><td>{{ mm.dt(a) }}</td><td>{{ mm.dt(b) }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">-</td></tr>{% endfor %}</table>
+<p class="help">A new version arrives when the weekly GitHub Actions job retrains and commits new models (see the technical manual, "Versioning and retraining"). Every inference keeps the version that produced it.</p>
+
+<h2>Last errors</h2>
+<table><tr><th>Date</th><th>Path</th><th>Type</th><th>Message</th></tr>
+{% for e in m.errors %}<tr><td>{{ mm.dt(e.created_at) }}</td><td><code>{{ e.method }} {{ e.path }}</code></td><td>{{ e.error_type }}</td><td>{{ e.message }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No errors.</td></tr>{% endfor %}</table>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "system/_m.html" as m %}
+{% block body %}
+<h1>Records</h1>
+<p class="lead">Leaderboard of VERIFIED records (best per player). Players send records from their profile; an analyst verifies them.</p>
+<p class="row">{% for k, v in RECORD_MODES.items() %}<a class="btn small {{ '' if mode == k else 'ghost' }}" href="{{ url_for('ops.records', mode=k) }}">{{ v }}</a>{% endfor %}</p>
+<table><tr><th>#</th><th>Player</th><th class="r">{{ 'Time (s, lower is better)' if mode in ('pan_t', 'rush') else 'Value' }}</th><th>Date</th></tr>
+{% for r in board %}<tr><td>{{ loop.index }}</td><td>{{ r.player.gamer_tag }}</td><td class="r">{{ r.value }}</td><td>{{ m.dt(r.achieved_at) }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No verified records yet.</td></tr>{% endfor %}</table>
+{% if current_user.staff %}
+<h2>Waiting for verification</h2>
+<table><tr><th>Player</th><th>Type</th><th class="r">Value</th><th>Sent</th><th></th></tr>
+{% for r in unverified %}<tr><td><a href="{{ url_for('ops.player', pid=r.player_id) }}">{{ r.player.gamer_tag }}</a></td><td>{{ RECORD_MODES[r.mode] }}</td><td class="r">{{ r.value }}</td><td>{{ m.dt(r.achieved_at) }}</td>
+<td>{{ m.post(url_for('ops.record_verify', rid=r.id), 'Verify', 'btn small', None, '<input type=hidden name=decision value=verify>') }}
+{{ m.post(url_for('ops.record_verify', rid=r.id), 'Reject', 'btn small danger', 'Reject and remove this record?', '<input type=hidden name=decision value=reject>') }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Nothing to verify.</td></tr>{% endfor %}</table>
+{% endif %}
+{% endblock %}
