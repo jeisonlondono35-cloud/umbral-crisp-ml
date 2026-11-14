@@ -25,6 +25,21 @@ from src.umbral_ml.config import (ACTIONS, ACTION_LABEL, DIFFS, FIG, HIT_X, MODE
                                   PROC, REPORTS, WORLDS)
 
 app = Flask(__name__)
+
+
+def _warm_up() -> None:
+    """Load the models and make one prediction at start-up, so the first visitor does not wait (~13 s on
+    Render's free instance)."""
+    try:
+        P.predict_next(["shoot", "dodge"], {"boss": True})
+        P.predict_hit("dive", {"close": 1}, {})
+    except Exception as e:  # never stop the app because of the warm-up
+        print("warm-up failed:", e)
+
+
+import threading  # noqa: E402
+
+threading.Thread(target=_warm_up, daemon=True).start()
 LIVE_LOG = MON / "live_predictions.jsonl"
 FEEDBACK = MON / "feedback.jsonl"
 
