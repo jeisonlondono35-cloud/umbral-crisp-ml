@@ -1,8 +1,8 @@
-"""Technical report "R3A2 Traces in data" (PDF).
+"""Technical report "R3A2 Traces in data" (PDF), APA 7 student-paper style.
 
-Same layout as the team's previous report (R2A2): university cover, table of contents, numbered sections
-with simple bordered tables, screenshots of the app, a debugging note, the Git workflow, discussion,
-conclusion and references. Written in simple English (CEFR A2-B1).
+Format asked by the team: Arial 12 in black everywhere, APA 7 (title page, page number top right, double
+spacing, unnumbered headings by level, APA tables and figures, in-text citations, references with
+hanging indent) and simple English (CEFR A2-B1), written in the team's own voice.
 
 Every number comes from the files that the Flask app also shows (results.json, data_report.json,
 monitoring, expert review), so the report and the app cannot disagree.
@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
@@ -26,47 +26,63 @@ from reportlab.platypus.tableofcontents import TableOfContents
 
 from .config import FIG, MON, RAW, REPORTS, ROOT
 
-TITLE = "Traces in Data: How UMBRAL's Bosses Learn from the Player"
+TITLE = "Traces in Data: How the Bosses of UMBRAL Learn From the Player"
 FILE_NAME = "R3A2 Traces in data.pdf"
 APP_URL = "https://umbral-crisp-ml.onrender.com"
 REPO_URL = "https://github.com/jeisonlondono35-cloud/umbral-crisp-ml"
 GAME_URL = "https://juego-pixelart.onrender.com"
 AUTHORS = ["Jeison Arboleda Londoño", "Juan Pablo Lugo Cárdenas", "Johan Sebastián Quintero Ramírez"]
 INSTITUTION = "Universidad de Cundinamarca"
+COURSE = "Machine Learning"
 TEACHER = "Edison Gustavo Cañón Varela"
+DATE = "November 14, 2026"
 IMG = ROOT / "docs" / "img"
 IG, IB = "In-game Markov-2 (decay 0.97)", "In-game bandit (SGD, lr 0.3)"
 TMP = REPORTS / "_crops"
+MARGIN = 1 * inch
+BLACK = colors.black
 
 
-# ------------------------------------------------------------------ fonts: Calibri/Cambria like the Word model
-def _fonts() -> tuple[str, str, str]:
+# ------------------------------------------------------------------ Arial 12, black (Helvetica on Linux: same metrics)
+def _fonts() -> tuple[str, str, str, str]:
     win = Path("C:/Windows/Fonts")
     try:
-        pdfmetrics.registerFont(TTFont("Calibri", str(win / "calibri.ttf")))
-        pdfmetrics.registerFont(TTFont("Calibri-Bold", str(win / "calibrib.ttf")))
-        pdfmetrics.registerFont(TTFont("Calibri-Italic", str(win / "calibrii.ttf")))
-        pdfmetrics.registerFont(TTFont("Cambria-Bold", str(win / "cambriab.ttf")))
         from reportlab.lib.fonts import addMapping
-        addMapping("Calibri", 0, 0, "Calibri")
-        addMapping("Calibri", 1, 0, "Calibri-Bold")
-        addMapping("Calibri", 0, 1, "Calibri-Italic")
-        addMapping("Calibri", 1, 1, "Calibri-Bold")
-        return "Calibri", "Calibri-Bold", "Cambria-Bold"
-    except Exception:          # Linux (GitHub Actions): same layout with Helvetica
-        return "Helvetica", "Helvetica-Bold", "Times-Bold"
+        for name, f in (("Arial", "arial.ttf"), ("Arial-Bold", "arialbd.ttf"), ("Arial-Italic", "ariali.ttf"),
+                        ("Arial-BoldItalic", "arialbi.ttf")):
+            pdfmetrics.registerFont(TTFont(name, str(win / f)))
+        addMapping("Arial", 0, 0, "Arial")
+        addMapping("Arial", 1, 0, "Arial-Bold")
+        addMapping("Arial", 0, 1, "Arial-Italic")
+        addMapping("Arial", 1, 1, "Arial-BoldItalic")
+        return "Arial", "Arial-Bold", "Arial-Italic", "Arial-BoldItalic"
+    except Exception:
+        return "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique"
 
 
-BODY, BOLD, SERIF = _fonts()
-P = ParagraphStyle("p", fontName=BODY, fontSize=11, leading=14.5, spaceAfter=7)
-H1 = ParagraphStyle("h1", fontName=BOLD, fontSize=15, leading=19, spaceBefore=16, spaceAfter=6, keepWithNext=1)
-H2 = ParagraphStyle("h2", fontName=BOLD, fontSize=12.5, leading=16, spaceBefore=10, spaceAfter=4, keepWithNext=1)
-BUL = ParagraphStyle("bul", parent=P, leftIndent=18, bulletIndent=6, spaceAfter=3)
-CELL = ParagraphStyle("cell", fontName=BODY, fontSize=10, leading=12.2)
-CELLB = ParagraphStyle("cellb", parent=CELL, fontName=BOLD)
-CAP = ParagraphStyle("cap", parent=P, fontSize=9.5, leading=12, textColor=colors.HexColor("#444444"), alignment=TA_CENTER)
-CEN = ParagraphStyle("cen", parent=P, alignment=TA_CENTER, fontSize=12, leading=17, spaceAfter=4)
-LINK = ParagraphStyle("link", parent=CEN, fontName=BOLD, textColor=colors.HexColor("#0000ee"))
+REG, BOLD, ITAL, BOLDITAL = _fonts()
+SIZE = 12
+DOUBLE = 24          # APA: double spacing
+P = ParagraphStyle("p", fontName=REG, fontSize=SIZE, leading=DOUBLE, firstLineIndent=0.5 * inch, textColor=BLACK,
+                   alignment=TA_LEFT, spaceAfter=0)
+P0 = ParagraphStyle("p0", parent=P, firstLineIndent=0)
+H1 = ParagraphStyle("h1", parent=P0, fontName=BOLD, alignment=TA_CENTER, keepWithNext=1)       # APA level 1
+H2 = ParagraphStyle("h2", parent=P0, fontName=BOLD, keepWithNext=1)                            # APA level 2
+LIST = ParagraphStyle("list", parent=P0, leftIndent=0.75 * inch, bulletIndent=0.5 * inch)
+CELL = ParagraphStyle("cell", fontName=REG, fontSize=SIZE, leading=14.5, textColor=BLACK)
+CELLH = ParagraphStyle("cellh", parent=CELL, fontName=BOLD)
+CAPN = ParagraphStyle("capn", parent=P0, fontName=BOLD, keepWithNext=1)                          # "Table 1"
+CAPT = ParagraphStyle("capt", parent=P0, fontName=ITAL, keepWithNext=1)                          # its title
+NOTE = ParagraphStyle("note", parent=P0, leading=18, spaceAfter=12)
+CEN = ParagraphStyle("cen", parent=P0, alignment=TA_CENTER)
+REF = ParagraphStyle("ref", parent=P0, leftIndent=0.5 * inch, firstLineIndent=-0.5 * inch)
+NUM = {"table": 0, "figure": 0}
+
+
+def _us_date(iso: str) -> str:
+    from datetime import date
+    d = date.fromisoformat(iso)
+    return f"{d.strftime('%B')} {d.day}, {d.year}"
 
 
 def pct(v, d=1):
@@ -81,24 +97,30 @@ def para(t):
     return Paragraph(t, P)
 
 
-def bullets(items):
-    return [Paragraph(t, BUL, bulletText="•") for t in items]
+def seriation(items):
+    """APA seriation: a bulleted list, same font and spacing as the text."""
+    return [Paragraph(t, LIST, bulletText="•") for t in items]
 
 
-def table(rows, widths, bold_rows=()):
-    data = [[Paragraph(str(c), CELLB if i == 0 or i in bold_rows else CELL) for c in r] for i, r in enumerate(rows)]
-    t = Table(data, colWidths=[w * inch for w in widths], repeatRows=1, hAlign="CENTER")
-    t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.6, colors.black), ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                           ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                           ("LEFTPADDING", (0, 0), (-1, -1), 4)]))
-    t.spaceBefore, t.spaceAfter = 2, 10
-    return t
+def apa_table(title, rows, widths, note=None):
+    """APA 7 table: bold number, italic title, black lines on every cell (asked by the team), optional note."""
+    NUM["table"] += 1
+    data = [[Paragraph(str(c), CELLH if i == 0 else CELL) for c in r] for i, r in enumerate(rows)]
+    t = Table(data, colWidths=[w * inch for w in widths], repeatRows=1, hAlign="LEFT")
+    t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.75, BLACK), ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                           ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                           ("LEFTPADDING", (0, 0), (-1, -1), 3), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
+    out = [Spacer(1, 6), Paragraph(f"Table {NUM['table']}", CAPN), Paragraph(title, CAPT), t]
+    out.append(Paragraph(f"<i>Note.</i> {note}", NOTE) if note else Spacer(1, 14))
+    return out
 
 
-def picture(path: Path, width_in: float, crop=None, caption=None):
+def apa_figure(path: Path, title, width_in, crop=None, note=None):
+    """APA 7 figure: bold number, italic title, the image, optional note."""
     from PIL import Image as PI
     if not path.exists():
-        return Spacer(1, 1)
+        return []
+    NUM["figure"] += 1
     im = PI.open(path)
     if crop:
         TMP.mkdir(exist_ok=True)
@@ -108,29 +130,30 @@ def picture(path: Path, width_in: float, crop=None, caption=None):
         im.save(path)
     w, h = im.size
     height = width_in * h / w
-    if height > 8.2:                      # never taller than the page
-        width_in, height = width_in * 8.2 / height, 8.2
-    out = [Image(str(path), width=width_in * inch, height=height * inch)]
-    if caption:
-        out.append(Paragraph(caption, CAP))
-    out.append(Spacer(1, 6))
-    return KeepTogether(out)
+    if height > 6.6:
+        width_in, height = width_in * 6.6 / height, 6.6
+    img = Image(str(path), width=width_in * inch, height=height * inch, hAlign="LEFT")
+    parts = [Spacer(1, 6), Paragraph(f"Figure {NUM['figure']}", CAPN), Paragraph(title, CAPT), img]
+    parts.append(Paragraph(f"<i>Note.</i> {note}", NOTE) if note else Spacer(1, 14))
+    return [KeepTogether(parts)]
 
 
 class Doc(BaseDocTemplate):
-    """Page number top-left (like the Word model) and headings collected for the table of contents."""
+    """APA page: 1-inch margins, page number top right; headings collected for the table of contents."""
 
     def __init__(self, path, **kw):
-        super().__init__(path, pagesize=LETTER, leftMargin=1.15 * inch, rightMargin=1.15 * inch,
-                         topMargin=1.1 * inch, bottomMargin=1 * inch, **kw)
-        frame = Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id="f")
+        super().__init__(path, pagesize=LETTER, leftMargin=MARGIN, rightMargin=MARGIN, topMargin=MARGIN,
+                         bottomMargin=MARGIN, **kw)
+        frame = Frame(MARGIN, MARGIN, self.width, self.height, id="f", leftPadding=0, rightPadding=0,
+                      topPadding=0, bottomPadding=0)
         self.addPageTemplates([PageTemplate(id="p", frames=[frame], onPage=self._number)])
 
     @staticmethod
     def _number(canvas, doc):
         canvas.saveState()
-        canvas.setFont(BODY, 11)
-        canvas.drawString(1.15 * inch, LETTER[1] - 0.65 * inch, str(doc.page))
+        canvas.setFont(REG, SIZE)
+        canvas.setFillColor(BLACK)
+        canvas.drawRightString(LETTER[0] - MARGIN, LETTER[1] - 0.6 * inch, str(doc.page))
         canvas.restoreState()
 
     def afterFlowable(self, f):
@@ -152,6 +175,7 @@ def h(text, level=0):
 
 
 def main() -> None:
+    NUM.update(table=0, figure=0)
     R = json.loads((REPORTS / "results.json").read_text(encoding="utf-8"))
     D = R["data"]
     M = json.loads((MON / "monitoring_simulated.json").read_text(encoding="utf-8"))
@@ -163,450 +187,472 @@ def main() -> None:
     real_acc = PUB["right"] / PUB["made"] if PUB.get("made") else None
     at, bt = A["test"][A["chosen"]], B["test"][B["chosen"]]
     ck = list(C["test"])[0]
+    maj = A["test"]["Majority class"]["accuracy"]
+    ra = D["real_available"]
+    th = M["thresholds"]
+    sv = R["serving"]
+    by_player = D["split"]["group_by"] == "pid"
     s = []
 
-    # ------------------------------------------------------------------ cover
+    # ------------------------------------------------------------------ title page (APA student paper)
     if (IMG / "logo_udec.png").exists():
-        s += [Spacer(1, 0.3 * inch), Image(str(IMG / "logo_udec.png"), width=1.25 * inch, height=1.25 * inch * 150 / 99)]
-    s += [Spacer(1, 0.55 * inch),
-          Paragraph(TITLE, ParagraphStyle("t", parent=CEN, fontName=BOLD, fontSize=16, leading=21, spaceAfter=12)),
-          Paragraph("Autor: " + AUTHORS[0], CEN)] + [Paragraph(a, CEN) for a in AUTHORS[1:]] + [
-          Spacer(1, 0.3 * inch), Paragraph("Institución: " + INSTITUTION, CEN), Paragraph("Profesor: " + TEACHER, CEN),
-          Spacer(1, 0.3 * inch), Paragraph("<b>Selected Topic:</b>", CEN),
-          Paragraph("Technical report: how a video game learns from the way people play (CRISP-ML)", CEN),
-          Spacer(1, 0.7 * inch),
-          Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', LINK), Spacer(1, 0.15 * inch),
-          Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', LINK),
-          Spacer(1, 0.1 * inch),
-          Paragraph(f"{REPO_URL}<br/>{APP_URL}", ParagraphStyle("u", parent=CAP, fontSize=9)),
+        s += [Spacer(1, 0.2 * inch), Image(str(IMG / "logo_udec.png"), width=1.1 * inch, height=1.1 * inch * 150 / 99)]
+    s += [Spacer(1, 0.6 * inch), Paragraph(f"<b>{TITLE}</b>", CEN), Spacer(1, DOUBLE)]
+    s += [Paragraph(a, CEN) for a in AUTHORS]
+    s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
+          Spacer(1, DOUBLE),
+          Paragraph("Selected topic: technical report about how a video game learns from the way people play (CRISP-ML)", CEN),
+          Spacer(1, DOUBLE),
+          Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', CEN),
+          Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', CEN),
           PageBreak()]
 
     # ------------------------------------------------------------------ contents
     toc = TableOfContents()
-    toc.levelStyles = [ParagraphStyle("t0", fontName=BODY, fontSize=11, leading=15, leftIndent=8),
-                       ParagraphStyle("t1", fontName=BODY, fontSize=11, leading=15, leftIndent=24)]
+    toc.levelStyles = [ParagraphStyle("t0", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0, textColor=BLACK),
+                       ParagraphStyle("t1", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0.35 * inch, textColor=BLACK)]
     toc.dotsMinLevel = 0
-    s += [Paragraph("Contenido", ParagraphStyle("c", fontName=SERIF, fontSize=17, leading=22, spaceAfter=8,
-                                                 textColor=colors.HexColor("#1f3864"))), toc, PageBreak()]
+    s += [Paragraph("<b>Table of Contents</b>", CEN), toc, PageBreak()]
 
-    # ------------------------------------------------------------------ 1. introduction
-    s += [h("1. Introduction"),
-          para("This report explains a Machine Learning (ML) project about our own video game, <b>UMBRAL</b>. UMBRAL is a "
-               "pixel-art action game made with Godot. People can play it on the web, on Android and on PC. In the game, "
-               "the bosses (the big enemies) learn how you play while you fight. For example, if you always use your "
-               "shield, the boss learns it and tricks you."),
-          para("The game already has three small ML models inside it. In this project we take these models out of the game, "
-               "we study them with data, we compare them with other algorithms, we choose the best one, and we put it in a "
-               "Flask web application. We follow the six phases of <b>CRISP-ML</b>, a standard process for ML projects."),
-          para("The main goals of this project are:")]
-    s += bullets(["Record real play data from the game, without names or accounts.",
-                  "Clean the data and prepare it, without data leakage.",
-                  "Compare several algorithms for three questions about the player.",
-                  "Choose the best model with a rule that we fixed before training.",
-                  "Put the model in a Flask app with a demo, and plan how to watch it over time.",
-                  "Write all the work in a web page with the six phases, and in this report."])
+    # ------------------------------------------------------------------ introduction
+    s += [Paragraph(f"<b>{TITLE}</b>", CEN),
+          h("Introduction"),
+          para("We are three students and we also make a video game together. The game is called UMBRAL. It is a pixel-art "
+               "action game made with Godot, and people can play it on the web, on Android phones and on computers. In "
+               f"the game you fight bosses, and the bosses learn from you while you fight. If you always use your shield, "
+               "the boss notices it and tries to trick you. If you always jump to the same side, the boss starts to aim there."),
+          para("To do this, the game already had three small machine learning models inside it. One model guesses your next "
+               "action, one model learns where you usually go when you dodge, and one model calculates if an attack will hit "
+               "you. We wrote them some months ago, but we never checked carefully if they really work. This project was "
+               "our chance to do it in a serious way."),
+          para("For this activity we followed CRISP-ML, a process model for machine learning projects that has six phases "
+               "(Studer et al., 2021). We recorded data from the game, cleaned it, trained and compared several models, chose "
+               "the best one with a rule that we wrote before training, put it in a Flask web application, and made a plan "
+               "to watch it over time. The name of the report, Traces in Data, comes from the idea that every player leaves "
+               "small traces while playing, and the computer can learn from them."),
+          para("Our main goals were the following:")]
+    s += seriation(["record real play data from the game without names or accounts;",
+                    "prepare the data without mixing the training data and the test data;",
+                    "compare several algorithms and choose the best one with a fixed rule;",
+                    "publish the model in a web application with a demo;",
+                    "plan how to watch the model and when to train it again."])
     if sim:
-        s.append(para(f"<b>Important note about the data.</b> The real recording started in November 2026. Right now it has "
-                      f"{D['real_available']['actions']:,} real actions from {D['real_available']['players']} players. This is "
-                      f"less than our minimum ({D['real_available']['min_actions']:,} actions from {D['real_available']['min_players']} "
-                      f"players). So the model results in this report use <b>simulated players</b>: computer players that follow "
-                      f"the rules of the game. We always write SIMULATED or REAL next to the numbers. Every Monday the system "
-                      f"trains again, and it changes to the real data by itself when there is enough."))
+        s.append(para(f"We need to be honest about one thing. We started recording real data in November 2026. When we "
+                      f"wrote this report we had {ra['actions']:,} real actions from {ra['players']} players, and our minimum "
+                      f"was {ra['min_actions']:,} actions from {ra['min_players']} players. For this reason, the model results in "
+                      f"this version come from simulated players, which are computer players that follow the rules of the game. "
+                      f"We always write SIMULATED or REAL next to the numbers. The system trains again every Monday, and it "
+                      f"changes to the real data by itself when there is enough of it."))
 
-    # ------------------------------------------------------------------ 2. concepts
-    s += [h("2. Machine Learning Concepts"),
-          para("In this project the computer learns from <b>traces</b>: the small records that each player leaves while fighting. "
-               "From these traces it learns patterns, and it uses the patterns to predict what the player will do. The table "
-               "below explains the main words we use in this report."),
-          h("2.1 Core Concepts", 1),
-          table([["Concept", "What it means in this project"],
-                 ["Player action", "One thing the player does in a fight: shoot, melee hit, block, dodge, jump or hide."],
-                 ["Trace / event", "One line of data that the game records, for example \"the player dodged at 120 px from the boss\"."],
-                 ["Feature", "An input for the model, for example the last two actions or the player's life."],
-                 ["Target", "The answer that the model must predict, for example the next action."],
-                 ["Model", "The program that learns the pattern from the data and makes predictions."],
-                 ["Training", "The moment when the model learns from data."],
-                 ["Validation / Test", "Data that the model did not see. We use it to check if the model is really good."],
-                 ["Online learning", "The model learns during the game, one action at a time. The game models work like this."],
-                 ["Data leakage", "A mistake: information from the test data enters the training. The results look better than they are."],
-                 ["Drift", "The data changes over time (for example after a game update), so the model can get worse."]],
-                [1.6, 4.4]),
-          h("2.2 The Six Phases of CRISP-ML", 1),
-          table([["Phase", "Main question", "Where in this report"],
-                 ["1. Business and Data Understanding", "What is the problem, and what data do we have?", "Section 3"],
-                 ["2. Data Engineering", "How do we clean and prepare the data?", "Section 4"],
-                 ["3. Model Engineering", "Which algorithms do we try, and how do we train them?", "Section 5"],
-                 ["4. Model Evaluation", "Which model is the best, and is it good enough?", "Section 6"],
-                 ["5. Model Deployment", "How can people use the model?", "Section 7"],
-                 ["6. Monitoring and Maintenance", "How do we watch the model and update it?", "Section 8"]],
-                [2.3, 2.6, 1.1])]
+    # ------------------------------------------------------------------ concepts
+    s += [h("Machine Learning Concepts"),
+          para("Before the phases, we want to explain some words that we use many times in this report. Table 1 shows them "
+               "with the meaning that they have in our project.")]
+    s += apa_table("Main Concepts Used in the Project", [
+        ["Concept", "Meaning in this project"],
+        ["Player action", "One thing the player does in a fight: shoot, hit, block, dodge, jump or hide."],
+        ["Trace or event", "One line of data that the game saves, for example \"the player dodged at 120 px from the boss\"."],
+        ["Feature", "An input for the model, for example the last two actions or the life of the player."],
+        ["Target", "The answer that the model must predict, for example the next action."],
+        ["Training", "The moment when the model learns from data."],
+        ["Validation and test data", "Data that the model did not see. We use it to check if the model is really good."],
+        ["Online learning", "The model learns during the game, one action at a time. The game models work like this."],
+        ["Data leakage", "A mistake where information from the test data enters the training, so the results look too good."],
+        ["Drift", "The data changes over time, for example after a game update, and the model can get worse."]],
+        [1.9, 4.6])
+    s += [para("CRISP-ML organizes the work in six phases. Each phase answers one question, and the results of one phase "
+               "are the starting point of the next one. Table 2 shows the phases and the question of each one.")]
+    s += apa_table("The Six Phases of CRISP-ML", [
+        ["Phase", "Main question"],
+        ["1. Business and data understanding", "What is the problem, and what data do we have?"],
+        ["2. Data engineering", "How do we clean and prepare the data?"],
+        ["3. Model engineering", "Which algorithms do we try, and how do we train them?"],
+        ["4. Model evaluation", "Which model is the best, and is it good enough?"],
+        ["5. Model deployment", "How can other people use the model?"],
+        ["6. Monitoring and maintenance", "How do we watch the model and update it?"]],
+        [2.8, 3.7], note="Adapted from Studer et al. (2021).")
 
-    # ------------------------------------------------------------------ 3. phase 1
-    s += [h("3. Phase 1: Business and Data Understanding"),
-          h("3.1 The Problem and the People", 1),
-          para("UMBRAL wants bosses that \"learn you\". If a player repeats the same pattern, the boss must notice it. But the "
-               "boss must also be fair. The approved project studies all the ML of the game: three models that already learn "
-               "online inside the game (file <i>scripts/ml_brain.gd</i>)."),
-          table([["Who", "Role", "What they need"],
-                 ["Players", "They use the game and create the data.", "Fun fights that change, and fair bosses."],
-                 ["J.A (Jeison)", "Creator of the game, domain expert, owner of the model and the data.", "To know if the game ML works, and which model to use."],
-                 ["J.P (Juan Pablo)", "Game developer.", "A fast model that works on phones."],
-                 ["J.Q (Johan)", "Web developer.", "Clear numbers and reports for the web."],
-                 ["Teacher", "Evaluator.", "A clear CRISP-ML process."]], [1.3, 2.4, 2.3]),
-          h("3.2 Business Goals and ML Goals", 1),
-          table([["Business goal", "ML goal", "Type of task"],
-                 ["The boss knows what you will do next.", "Predict the next action better than the game model and better than \"always the most common action\".", "Classification (6 classes)"],
-                 ["The boss chooses good attacks, but fair ones.", "Give a good probability that an attack hits the player.", "Classification (yes / no) with probability"],
-                 ["The boss aims where you go.", "Predict where the player moves when the boss charges.", "Regression (x, y)"],
-                 ["It works on a phone during a fight.", "Fast predictions (milliseconds) and small files.", "Limit for every model"]],
-                [1.9, 2.6, 1.5]),
-          h("3.3 Data Sources", 1),
-          table([["Source", "What it has", "Status"],
-                 ["Anonymous play log (Supabase, table umbral_ml_log)", "We added it to the game for this project. It saves every action in a fight, every boss attack and every dodge. It uses random ids, not names. Players can turn it off.",
-                  f"REAL: {D['real_available']['actions']:,} actions from {D['real_available']['players']} players (started November 2026)"],
-                 ["Accuracy per account (umbral_ml_public)", "How many times the game model was right, for each account.",
-                  f"REAL: {PUB.get('players', 0)} players, {PUB.get('made', 0):,} predictions, {pct(real_acc)} correct"],
-                 ["Simulated players (simulate.py)", "Computer players that follow the game rules. Same format as the real log.",
-                  f"SIMULATED: {b['events']:,} events, {b['players']} players" if sim else "SIMULATED: only for the monitoring test"]],
-                [1.7, 2.8, 1.5]),
-          h("3.4 Variables and Target", 1),
-          table([["Variable", "Meaning"],
-                 ["a (target 1)", "The action: shoot, melee, block, dodge, jump or hide."],
-                 ["gap", "Time since the last action (more than 4 seconds starts a new group of actions)."],
-                 ["ne", "Distance to the nearest enemy, in pixels."],
-                 ["w, m, d, hp", "World (1 to 5), game mode, difficulty and life."],
-                 ["mv and x[8]", "The boss attack and 8 numbers about the situation (close, far, in the air, blocking, moving, low life...)."],
-                 ["y (target 2)", f"1 if the attack hit the player, 0 if not (hit rate: {pct(b['hit_rate'])})."],
-                 ["ox, oy (target 3)", "Where the player moved during a boss charge, in pixels."]], [1.5, 4.5]),
-          para(f"Size of the data in this build ({R['source']}): <b>{D['rows']['actions']:,}</b> actions, "
-               f"<b>{D['rows']['hits']:,}</b> boss attacks and <b>{D['rows']['dodges']:,}</b> dodges."),
-          picture(FIG / "fig_classes.png", 5.2, caption="Figure 1. How often each action appears. The classes are not balanced."),
-          h("3.5 Data Quality, Limits and Risks", 1)]
-    s += bullets(["<b>Quality:</b> the game writes the data itself, so the values have the right type. We found some problems and we fix them in Phase 2.",
-                  "<b>Relevance:</b> the data is exactly what the game models see when they decide.",
-                  f"<b>Enough data:</b> our minimum for real data is {D['real_available']['min_actions']:,} actions from {D['real_available']['min_players']} players.",
-                  "<b>Risks:</b> few real players at the start (friends of the team), players change over time, privacy, and a boss that feels unfair or too difficult."])
-    s += [h("3.6 Success Criteria", 1),
-          para("We wrote these rules <b>before</b> training, so we cannot change them after we see the results."),
-          table([["#", "Criterion"],
-                 ["S1", "Next action: test accuracy is at least 10 points higher than \"always the most common action\"."],
-                 ["S2", "Next action: test accuracy is not lower than the game model."],
-                 ["S3", "Hit: the Brier score is lower than the game model and lower than a constant guess."],
-                 ["S4", "Dodge: the average error is lower than the game model."],
-                 ["S5", "Speed: one prediction takes less than 50 ms."],
-                 ["S6", "We choose the model with the validation data. We use the test data only one time, at the end."]],
-                [0.5, 5.5]),
-          picture(IMG / "app_phase1.png", 6.0, crop=(0, 60, 1280, 1250), caption="Figure 2. Phase 1 page in the Flask app.")]
+    # ------------------------------------------------------------------ phase 1
+    s += [h("Phase 1: Business and Data Understanding"),
+          h("The Problem and the People", 1),
+          para("The problem is simple to say but not so simple to solve. We want bosses that learn the player, but we also "
+               "want them to be fair. Player modeling, which means building a model of how a person plays, is a common idea "
+               "in game research (Yannakakis & Togelius, 2018). In our case the approved project includes all the machine "
+               "learning of the game, so we studied the three models together."),
+          para("Several people are involved. The players use the game and create the data, and they want fights that change "
+               "but stay fair. Jeison (J.A) created the game and he is the domain expert and the owner of the model and the "
+               "data. Juan Pablo (J.P) works on the game code, so he needs a model that is fast on phones. Johan (J.Q) works on "
+               "the website and the reports, so he needs clear numbers. Finally, our teacher evaluates the process."),
+          h("Business Goals and Machine Learning Goals", 1),
+          para("We translated each goal of the game into a goal that we can measure. Table 3 shows this translation.")]
+    s += apa_table("Business Goals Translated Into Machine Learning Goals", [
+        ["Business goal", "Machine learning goal", "Type of task"],
+        ["The boss knows what you will do next.", "Predict the next action better than the game model and better than always guessing the most common action.", "Classification, 6 classes"],
+        ["The boss chooses good attacks, but fair ones.", "Give a correct probability that an attack hits the player.", "Classification with probability"],
+        ["The boss aims where you go.", "Predict where the player moves when the boss charges.", "Regression (x, y)"],
+        ["It works on a phone during a fight.", "Fast predictions and small model files.", "Limit for every model"]],
+        [1.9, 3.0, 1.6])
+    s += [h("Data Sources and Variables", 1),
+          para("We used three sources of data (Table 4). The most important one is a play log that we added to the game for "
+               "this project. It saves every action in a fight, every boss attack and every dodge, but it does not save names, "
+               "emails or accounts. It only uses random numbers to tell players apart, and players can turn it off in the "
+               "options of the game.")]
+    s += apa_table("Data Sources of the Project", [
+        ["Source", "What it contains", "Status"],
+        ["Anonymous play log (Supabase)", "Actions, boss attacks with 8 situation numbers, results and dodges.", f"REAL: {ra['actions']:,} actions, {ra['players']} players"],
+        ["Accuracy per account (Supabase)", "How many times the game model was right for each account.", f"REAL: {PUB.get('players', 0)} players, {PUB.get('made', 0):,} predictions, {pct(real_acc)} correct"],
+        ["Simulated players", "Computer players that follow the rules of the game, in the same format.", f"SIMULATED: {b['events']:,} events, {b['players']} players" if sim else "SIMULATED: only for the monitoring test"]],
+        [1.9, 2.9, 1.7])
+    s += [para(f"The three targets are the next action (six classes), whether an attack hit the player (yes or no) and the "
+               f"place where the player moved during a charge (x and y in pixels). The inputs include the last actions, the time "
+               f"between actions, the distance to the nearest enemy, the world, the game mode, the difficulty and the life of "
+               f"the player. In this version the data has {D['rows']['actions']:,} actions, {D['rows']['hits']:,} boss attacks "
+               f"and {D['rows']['dodges']:,} dodges. As Figure 1 shows, the classes are not balanced: shooting is much more common "
+               f"than hiding or jumping. Around {pct(b['hit_rate'], 0)} of the boss attacks hit the player.")]
+    s += apa_figure(FIG / "fig_classes.png", "Share of Each Action in the Data", 5.6)
+    s += [h("Data Quality, Limits and Risks", 1),
+          para("The game writes the data itself, so the values usually have the right type, but we still found some problems "
+               "that we explain in Phase 2. The data is relevant because it is exactly what the game models see when they "
+               "decide. Our main limit is the amount of real data, because at the beginning only our friends play the game. "
+               "Other risks are that players change over time, privacy, and a boss that feels unfair or too difficult."),
+          h("Success Criteria", 1),
+          para("We wrote the rules in Table 5 before training. In this way we could not change them after we saw the results.")]
+    s += apa_table("Success Criteria Defined Before Training", [
+        ["Code", "Criterion"],
+        ["S1", "Next action: test accuracy is at least 10 points higher than always guessing the most common action."],
+        ["S2", "Next action: test accuracy is not lower than the game model."],
+        ["S3", "Hit: the Brier score is lower than the game model and lower than a constant guess."],
+        ["S4", "Dodge: the average error is lower than the game model."],
+        ["S5", "Speed: one prediction takes less than 50 milliseconds."],
+        ["S6", "The model is chosen with the validation data, and the test data is used only once, at the end."]],
+        [0.8, 5.7])
 
-    # ------------------------------------------------------------------ 4. phase 2
-    s += [h("4. Phase 2: Data Engineering"),
-          para("In this phase we clean the raw data and we create the inputs for the models. The code is in "
-               "<i>src/umbral_ml/prepare.py</i>. The table shows the problems that we found, before and after cleaning."),
-          h("4.1 Problems in the Data (Before and After)", 1),
-          table([["Check", "Before", "After", "What we did"],
-                 ["Events", f"{b['events']:,}", f"{af['events']:,}", ""],
-                 ["Duplicated events", b["duplicate_events"], af["duplicate_events"], "We removed them. They come from a batch that was sent two times."],
-                 ["Distance = 9999 (no enemy)", b["ne_sentinel_9999"], af["ne_sentinel_9999"], "9999 is not a real distance. We changed it to \"missing\" and filled it with the median of the training data."],
-                 ["Unknown actions", b["invalid_action"], af["invalid_action"], "We remove them if they appear."],
-                 ["Very long pauses (10 min or more)", b["gap_over_10min"], af["gap_over_10min"], "We keep them, but with a limit of 10 minutes."]],
-                [1.7, 0.7, 0.7, 2.9]),
-          picture(FIG / "fig_before_after.png", 5.6, caption="Figure 3. The data before and after cleaning."),
-          h("4.2 Each Transformation", 1)]
-    rows = [["#", "Step", "Why"]] + [[i + 1, t["step"], t["why"]] for i, t in enumerate(D["transformations"])]
-    rows.append([len(rows), "Encoding and scaling", "Inside each model pipeline: one-hot encoding for categories, median for missing numbers, and scaling. It is fitted only with the training data."])
-    s += [table(rows, [0.35, 1.75, 3.9]),
-          h("4.3 New Features (Feature Engineering)", 1)]
-    s += bullets(["<b>prev1, prev2:</b> the last two actions of the player. After 4 seconds without actions they become \"start\", like in the game.",
-                  "<b>hist_*:</b> how often this player did each action before. This helps a general model to know each player.",
-                  "<b>mk_*:</b> the probabilities of the player's own online model at that moment.",
-                  "<b>boss:</b> 1 if the fight is against a boss.",
-                  "<b>attack x situation:</b> one slope for each boss attack, like the game model."])
-    s += [para("All these features use only the <b>past</b> of the same player. They never use the future."),
-          h("4.4 Train, Validation and Test Split", 1),
-          table([["Part", "Groups", "Actions", "Attacks", "What we use it for"],
-                 ["Train", D["split"]["train"], f"{D['split_rows']['actions']['train']:,}", f"{D['split_rows']['hits']['train']:,}", "To train, and to tune the models with cross-validation"],
-                 ["Validation", D["split"]["val"], f"{D['split_rows']['actions']['val']:,}", f"{D['split_rows']['hits']['val']:,}", "To choose the best model"],
-                 ["Test", D["split"]["test"], f"{D['split_rows']['actions']['test']:,}", f"{D['split_rows']['hits']['test']:,}", "One final check, at the end"]],
-                [1.0, 0.7, 0.9, 0.9, 2.5]),
-          para(f"We split the data by <b>{'player' if D['split']['group_by'] == 'pid' else 'game session'}</b>: all the data of one "
-               f"{'player' if D['split']['group_by'] == 'pid' else 'session'} goes to only one part. If the same player was in train and "
-               "in test, the model could remember the player, and the result would be too good. This is how we avoid data leakage."),
-          picture(IMG / "app_phase2.png", 6.0, crop=(0, 60, 1280, 1320), caption="Figure 4. Phase 2 page in the Flask app.")]
+    # ------------------------------------------------------------------ phase 2
+    s += [h("Phase 2: Data Engineering"),
+          para("In this phase we cleaned the raw data and created the inputs for the models. This part took more time than we "
+               "expected, because the data comes in small packages from the game and some problems only appear when you look "
+               "at all the packages together. Table 6 and Figure 2 show what we found and what we did."),
+          h("Problems Found in the Data", 1)]
+    s += apa_table("Data Problems Before and After Cleaning", [
+        ["Check", "Before", "After", "What we did"],
+        ["Total events", f"{b['events']:,}", f"{af['events']:,}", ""],
+        ["Duplicated events", b["duplicate_events"], af["duplicate_events"], "We removed them. They come from a package that the game sent two times."],
+        ["Distance = 9999", b["ne_sentinel_9999"], af["ne_sentinel_9999"], "9999 means that there was no enemy, so we changed it to a missing value and filled it with the median of the training data."],
+        ["Unknown actions", b["invalid_action"], af["invalid_action"], "We remove them if they appear."],
+        ["Pauses of 10 minutes or more", b["gap_over_10min"], af["gap_over_10min"], "We keep them, but with a limit of 10 minutes."]],
+        [1.7, 0.75, 0.75, 3.3])
+    s += apa_figure(FIG / "fig_before_after.png", "Number of Events and Problems Before and After Cleaning", 5.8,
+                    note="The horizontal axis uses a logarithmic scale.")
+    s += [h("Transformations and New Features", 1),
+          para("We applied the transformations in a fixed order. First we removed duplicated events and rows that cannot "
+               "come from the game. Then we changed the value 9999 to a missing value, we limited extreme values, and we "
+               "sorted the events of each player by time. The encoding of categories (one-hot encoding) and the scaling of "
+               "numbers happen inside each model pipeline, so they learn only from the training data."),
+          para("We also created new features using what we know about the game. The features prev1 and prev2 are the last "
+               "two actions of the player, and they reset after 4 seconds without actions, like in the game. The features "
+               "hist_ tell how often the same player did each action before, and the features mk_ are the probabilities of "
+               "the online model of that player. We also added a boss flag and, for the attacks, a combination of attack and "
+               "situation. All of these features use only the past of the player and never the future."),
+          h("Train, Validation and Test Split", 1),
+          para(f"We split the data by {'player' if by_player else 'game session'}, so all the data of one "
+               f"{'player' if by_player else 'session'} goes to only one part (Table 7). If the same player was in training and "
+               "in test, the model could remember that person, and the result would look better than it really is. This was "
+               "our main protection against data leakage.")]
+    s += apa_table("Size of Each Part of the Data", [
+        ["Part", "Groups", "Actions", "Attacks", "Use"],
+        ["Training", D["split"]["train"], f"{D['split_rows']['actions']['train']:,}", f"{D['split_rows']['hits']['train']:,}", "Train the models and tune them with cross-validation"],
+        ["Validation", D["split"]["val"], f"{D['split_rows']['actions']['val']:,}", f"{D['split_rows']['hits']['val']:,}", "Choose the best model"],
+        ["Test", D["split"]["test"], f"{D['split_rows']['actions']['test']:,}", f"{D['split_rows']['hits']['test']:,}", "One final check at the end"]],
+        [1.1, 0.8, 1.0, 0.9, 2.7], note=f"Groups are {'players' if by_player else 'game sessions'}.")
 
-    # ------------------------------------------------------------------ 5. phase 3
-    s += [h("5. Phase 3: Model Engineering"),
-          para("We tried several algorithms for each question. All of them use the same data and the same rules, so the "
-               "comparison is fair. The code is in <i>src/umbral_ml/train.py</i>."),
-          h("5.1 The Algorithms We Tried", 1),
-          table([["Model", "Why we tried it"],
-                 ["Most common action (baseline)", "The simplest guess. A useful model must be better than this."],
-                 ["Global Markov-1 table", "A simple model of sequences: the same for all players."],
-                 ["In-game Markov-2 (decay 0.97)", "The model that the game uses now. It learns each player online and forgets old data slowly."],
-                 ["Tuned online Markov", "The same model, but with other numbers (order and decay) chosen with data."],
-                 ["Logistic regression", "Simple and fast, gives good probabilities, easy to copy into the game code."],
-                 ["Random forest", "Many decision trees together. It finds non-linear patterns."],
-                 ["Gradient boosting (HistGB)", "Strong for tabular data, and it works with missing values."]],
-                [2.0, 4.0]),
-          para("For the <b>hit</b> question we also tried: a constant hit rate, the game bandit (one logistic regression for each "
-               "attack, trained online), logistic regression with and without attack x situation, a decision tree, a random forest "
-               "and gradient boosting. For the <b>dodge</b> we tried: no movement, the global average, the game average and an "
-               "average for each player that moves towards the global average."),
-          h("5.2 Training Configuration", 1),
-          table([["Parameter", "Value", "Reason"],
-                 ["Cross-validation", "GroupKFold, 5 folds", "Groups by player, so the same player is never in two folds."],
-                 ["Hyperparameter search", "GridSearchCV", "It tries all the combinations in a small grid."],
-                 ["Logistic regression C", "0.1, 1, 10", "How strong the regularization is."],
-                 ["Random forest", "depth 8/16, leaf 5/20, 150 trees", "Depth controls how complex the trees are."],
-                 ["Gradient boosting", "learning rate 0.05/0.1, depth 3/6", "Small steps and short trees avoid overfitting."],
-                 ["Markov order and decay", "order 1/2, decay 0.85 to 1.0", "How much history and how much memory the game model uses."],
-                 ["Bandit learning rate", "0.03 to 0.6", "How fast the game bandit learns."],
-                 ["Random seed", "42", "The results are always the same."],
-                 ["Library", f"scikit-learn {R['sklearn']}", "Standard ML library for Python."]],
-                [1.7, 1.8, 2.5]),
-          h("5.3 Experiment Log", 1),
-          para(f"We saved every experiment ({len(R['experiments'])} in total) in <i>reports/experiments.csv</i>. "
-               "The table shows the experiments for the next-action question.")]
-    rows = [["Model", "Features", "CV accuracy", "Validation", "Train"]]
+    # ------------------------------------------------------------------ phase 3
+    s += [h("Phase 3: Model Engineering"),
+          h("Algorithms We Tried", 1),
+          para("For the next action we tried seven kinds of models (Table 8). We started with very simple ones, because a "
+               "complex model is only useful if it is better than a simple guess. We also included the model that the game "
+               "uses today, because in the end the real question was whether we can do better than that."),
+          ]
+    s += apa_table("Models Compared for the Next Action", [
+        ["Model", "Why we tried it"],
+        ["Most common action", "The simplest guess. A useful model must be better than this."],
+        ["Global Markov table", "A simple model of sequences, the same for all players."],
+        ["Game model (Markov, decay 0.97)", "The model that the game uses now. It learns each player online and slowly forgets old data."],
+        ["Tuned game model", "The same idea, with other values for order and decay chosen with data."],
+        ["Logistic regression", "Simple and fast, with good probabilities, and easy to copy into the game code."],
+        ["Random forest", "Many decision trees together (Breiman, 2001). It can find patterns that are not linear."],
+        ["Gradient boosting", "Usually strong with tables of data, and it accepts missing values."]],
+        [2.2, 4.3])
+    s += [para("For the attacks we compared a constant hit rate, the game model (one logistic regression for each attack, "
+               "trained online), logistic regression with and without the combination of attack and situation, a decision "
+               "tree, a random forest and gradient boosting. For the dodge we compared no movement, the global average, the "
+               "average of the game, and an average for each player that moves towards the global average when the player "
+               "has little data."),
+          h("Training Configuration", 1),
+          para(f"We used scikit-learn {R['sklearn']} (Pedregosa et al., 2011). To choose the hyperparameters we used a grid "
+               "search with group cross-validation, where each group is a player, so the same player never appears in two "
+               "folds. Table 9 shows the main settings.")]
+    s += apa_table("Training Settings", [
+        ["Setting", "Value", "Reason"],
+        ["Cross-validation", "GroupKFold, 5 folds", "The same player is never in two folds."],
+        ["Logistic regression C", "0.1, 1 and 10", "Controls how strong the regularization is."],
+        ["Random forest", "Depth 8 or 16, leaf 5 or 20", "Controls how complex the trees are."],
+        ["Gradient boosting", "Learning rate 0.05 or 0.1, depth 3 or 6", "Small steps and short trees reduce overfitting."],
+        ["Game model", "Order 1 or 2, decay 0.85 to 1.0", "How much history and memory the model uses."],
+        ["Random seed", "42", "The results can be repeated."]],
+        [1.7, 2.2, 2.6])
+    s += [h("Experiment Log", 1),
+          para(f"We saved every experiment in a file (reports/experiments.csv), {len(R['experiments'])} in total. Table 10 "
+               "shows the experiments for the next action. The gap between training and validation helped us to see "
+               "overfitting early.")]
+    rows = [["Model", "Features", "CV (mean ± SD)", "Validation", "Training"]]
     for e in R["experiments"]:
         if e["task"] == "A":
-            rows.append([e["model"], e["features"], "-" if e["cv_mean"] is None else f"{pct(e['cv_mean'])} ± {pct(e['cv_std'])}",
+            rows.append([e["model"], e["features"].replace("+", " + "), "-" if e["cv_mean"] is None else f"{pct(e['cv_mean'])} ± {pct(e['cv_std'])}",
                          pct(e["val"]), pct(e["train"]) if e["train"] is not None else "-"])
-    s += [table(rows, [2.0, 1.5, 1.1, 0.8, 0.6]),
-          h("5.4 How the Game Knowledge Helped", 1)]
-    s += bullets(["We split by player, because the model must work for a new player.",
-                  "We use the last two actions and the 4-second rule, because fights come in short groups of actions.",
-                  "We add the history of each player, because every player has a style.",
-                  "We give one slope to each boss attack, because a trick attack beats the shield but a jump beats a ground wave.",
-                  "We test the online models step by step (predict first, then learn), like in the real game."])
-    s.append(picture(IMG / "app_phase3.png", 6.0, crop=(0, 60, 1280, 1250), caption="Figure 5. Phase 3 page in the Flask app."))
+    s += apa_table("Experiment Log for the Next Action (Accuracy)", rows, [1.85, 1.5, 1.35, 1.0, 0.8],
+                   note="CV is the accuracy in the five group cross-validation folds (mean ± standard deviation).")
+    s += [h("How Our Knowledge of the Game Helped", 1),
+          para("Knowing the game helped us in many decisions. We split the data by player because the model must work for a "
+               "new person who opens the game. We used the last two actions and the 4-second rule because fights happen in "
+               "short groups of actions. We added the history of each player because every player has a style. We gave each "
+               "attack its own effect because, for example, a fake attack beats the shield but a jump beats a wave on the "
+               "ground. Finally, we tested the online models step by step, first predicting and then learning, because that "
+               "is exactly how they work in the game.")]
 
-    # ------------------------------------------------------------------ 6. phase 4
+    # ------------------------------------------------------------------ phase 4
     lc = A["learning_curve"]
     ga = [e for e in R["experiments"] if e["task"] == "A" and e["gap_train_val"] is not None]
     worst = max(ga, key=lambda e: e["gap_train_val"])
-    s += [h("6. Phase 4: Model Evaluation"),
-          h("6.1 Metrics", 1),
-          table([["Question", "Main metric", "Why"],
-                 ["Next action", "Accuracy (and macro-F1, log loss)", "The boss uses the most probable action, so we count how many times the model is right. Macro-F1 helps because the classes are not balanced."],
-                 ["Hit", "Brier score (and ROC-AUC)", "The boss compares probabilities, so they must be correct. A lower Brier score is better."],
-                 ["Dodge", "Average error in pixels", "It is the distance between the boss aim and the real place."]],
-                [1.1, 1.9, 3.0]),
-          para("Our data has groups (players), so normal K-fold cross-validation is not correct. We use <b>GroupKFold by player</b>, "
-               "a separate group of validation players, and step-by-step (prequential) testing for the online models."),
-          h("6.2 Comparison of the Models", 1),
-          picture(FIG / "fig_cmp_a.png", 5.8, caption="Figure 6. Next action: validation accuracy. Blue = chosen model, dark gray = baselines."),
-          picture(FIG / "fig_cmp_b.png", 5.8, caption="Figure 7. Hit: validation Brier score (lower is better).")]
-    rows = [["Model", "Validation accuracy", "Macro-F1", "Log loss"]]
-    for k, v in A["candidates"].items():
-        rows.append([k + ("  (chosen)" if k == A["chosen"] else ""), pct(v["val"]["accuracy"]), f3(v["val"]["macro_f1"]), f3(v["val"]["log_loss"])])
-    s += [table(rows, [3.0, 1.2, 0.9, 0.9])]
-    rows = [["Model", "Validation Brier", "ROC-AUC"]]
-    for k, v in B["candidates"].items():
-        rows.append([k + ("  (chosen)" if k == B["chosen"] else ""), f3(v["val"]["brier"]), f3(v["val"]["roc_auc"])])
-    s += [Spacer(1, 8), table(rows, [3.6, 1.3, 1.1])]
-    rows = [["Dodge model", "Validation error (px)"]]
-    for k, v in C["candidates"].items():
-        rows.append([k + ("  (chosen)" if k == C["chosen"] else ""), f3(v["val"]["mean_error_px"], 1)])
-    s += [Spacer(1, 8), table(rows, [4.2, 1.8]),
-          h("6.3 Overfitting, Underfitting and Bias", 1)]
-    s += bullets([f"<b>Overfitting:</b> a model is much better on the training data than on new data. The biggest gap is "
-                  f"{worst['model']} ({100 * worst['gap_train_val']:.1f} points). The learning curve of the best general model goes "
-                  f"from {pct(lc['val'][0])} with {lc['sizes'][0]:,} rows to {pct(lc['val'][-1])} with {lc['sizes'][-1]:,} rows.",
-                  f"<b>Underfitting:</b> a general model without the history of the player gets only "
-                  f"{pct(A['candidates']['Logistic regression [seq]']['val']['accuracy'])} (the most common action gets "
-                  f"{pct(A['candidates']['Majority class']['val']['accuracy'])}). Players are very different, so the model needs the history of each player.",
-                  "<b>Bias:</b> we check the results for each difficulty and each game mode: " +
-                  "; ".join(f"{k.split('=')[1]} {pct(v['accuracy'])}" for k, v in A["test_segments"].items()) + ".",
-                  "<b>Rare actions:</b> the model finds rare actions (jump, hide) less often: " +
-                  ", ".join(f"{k} {pct(v, 0)}" for k, v in A["test_recall"].items()) + "."])
-    s += [picture(FIG / "fig_learning_curve.png", 5.4, caption="Figure 8. Learning curve."),
-          picture(FIG / "fig_experience.png", 5.4, caption="Figure 9. How fast each model learns a new player."),
-          picture(FIG / "fig_confusion.png", 4.4, caption="Figure 10. Confusion matrix on the test data."),
-          picture(FIG / "fig_calibration.png", 3.9, caption="Figure 11. Calibration of the hit probability."),
-          h("6.4 Review with the Domain Expert", 1),
-          para(f"The domain expert is <b>J.A</b>, the creator of the game. On {E['date']} we explained the results in simple words "
-               f"and he answered four questions. {'(The review used the first run, with simulated players.)' if 'SIMULATED' in E['data_shown'] else ''}"),
-          table([["Question", "Answer (Spanish)", "Answer (English)"]] +
-                [[q["question"], q["answer_es"], q["answer_en"]] for q in E["answers"]], [2.4, 1.3, 2.3]),
-          para("Because of this review we keep the fairness limits in the game (the boss waits for your dodge at most 60% of the "
-               "time and always shows its warning) and we check the results for each difficulty."),
-          h("6.5 The Chosen Models and the Final Test", 1),
-          para(f"Rule: the best validation result wins. The chosen models are <b>{A['chosen']}</b> (next action), "
-               f"<b>{B['chosen']}</b> (hit) and <b>{C['chosen']}</b> (dodge). We trained them again with train + validation and we "
-               f"tested them <b>one time</b> with the test data.")]
-    rows = [["Question", "Model", "Test result"]]
+    s += [h("Phase 4: Model Evaluation"),
+          h("Metrics and Validation", 1),
+          para("For the next action we used accuracy, because the boss acts on the most probable action, so what matters is "
+               "how many times the model is right. We also looked at macro-F1, because the classes are not balanced. For the "
+               "attacks we used the Brier score (Brier, 1950), which measures how good a probability is. A lower Brier score "
+               "is better. We chose it because the boss compares probabilities between attacks, so a correct 30% is more "
+               "useful than a good order. For the dodge we used the average error in pixels."),
+          para("Our data has groups, because many actions come from the same player. For this reason normal K-fold "
+               "cross-validation was not correct, and we used group cross-validation by player. The online models were "
+               "tested step by step, which is called prequential evaluation (Dawid, 1984)."),
+          h("Comparison of the Models", 1),
+          para(f"Figures 3 and 4 compare the models with the validation players. For the next action, the chosen model "
+               f"({A['chosen']}) and the game model were close. The difference became clearer in the final test.")]
+    s += apa_figure(FIG / "fig_cmp_a.png", "Validation Accuracy for the Next Action", 6.2,
+                    note="Blue shows the chosen model and dark gray shows the baselines.")
+    s += apa_figure(FIG / "fig_cmp_b.png", "Validation Brier Score for the Hit Probability", 6.2,
+                    note="A lower value is better. Blue shows the chosen model.")
+    rows = [["Model", "Brier", "ROC-AUC"]] + [[k, f3(v["val"]["brier"]), f3(v["val"]["roc_auc"])] for k, v in B["candidates"].items()]
+    s += apa_table("Validation Results for the Hit Probability", rows, [4.3, 1.1, 1.1])
+    rows = [["Model", "Average error (px)"]] + [[k, f3(v["val"]["mean_error_px"], 1)] for k, v in C["candidates"].items()]
+    s += apa_table("Validation Results for the Dodge", rows, [4.5, 2.0])
+    s += [h("Overfitting, Underfitting and Bias", 1),
+          para(f"A model overfits when it is much better with the training data than with new data. The biggest gap was "
+               f"in the {worst['model'].lower()} ({100 * worst['gap_train_val']:.1f} points), which we expected because "
+               f"trees can memorize details. The learning curve in Figure 5 shows the validation accuracy going from "
+               f"{pct(lc['val'][0])} with {lc['sizes'][0]:,} rows to {pct(lc['val'][-1])} with {lc['sizes'][-1]:,} rows."),
+          para(f"We also saw underfitting. A general model without the history of the player got only "
+               f"{pct(A['candidates']['Logistic regression [seq]']['val']['accuracy'])}, very close to the "
+               f"{pct(A['candidates']['Majority class']['val']['accuracy'])} of the simplest guess. This surprised us at first, "
+               f"but it makes sense: players are very different, so one rule for everybody is not enough. When we added the "
+               f"history of each player, the results improved a lot. Figure 6 shows how fast each model learns a new player.")]
+    s += apa_figure(FIG / "fig_learning_curve.png", "Learning Curve of the Best General Model", 5.8)
+    s += apa_figure(FIG / "fig_experience.png", "Accuracy According to the Number of Actions Already Seen From the Player", 5.8)
+    s += [para("To check bias, we compared the results by difficulty and by game mode: " +
+               "; ".join(f"{k.split('=')[1].lower()}, {pct(v['accuracy'])}" for k, v in A["test_segments"].items()) +
+               ". The model also finds rare actions less often, as the confusion matrix in Figure 7 shows. This is a risk, "
+               "because a boss could ignore players who like to hide. Figure 8 shows the calibration of the hit probability.")]
+    s += apa_figure(FIG / "fig_confusion.png", "Confusion Matrix of the Chosen Model With the Test Data", 4.6,
+                    note="Each row shows the real action and each column shows the predicted action, as a percentage of the row.")
+    s += apa_figure(FIG / "fig_calibration.png", "Calibration of the Hit Probability With the Test Data", 4.3,
+                    note="Points close to the dotted line mean that the predicted probability matches the real frequency.")
+    s += [h("Review With the Domain Expert", 1),
+          para(f"Jeison is the creator of the game, so he was our domain expert. On {_us_date(E['date'])} we explained the results to him in simple words and asked four questions. "
+               + ("This review used the first run with simulated players. " if "SIMULATED" in E["data_shown"] else "") +
+               "Table 13 shows his answers, first in Spanish as he said them and then in English.")]
+    s += apa_table("Answers of the Domain Expert", [["Question", "Answer (Spanish)", "Answer (English)"]] +
+                   [[q["question"], q["answer_es"], q["answer_en"]] for q in E["answers"]], [2.5, 1.5, 2.5])
+    s += [para("His opinion changed some decisions. We kept the rule of choosing the model with the best validation "
+               "result, and we kept the limits that make the bosses fair: the boss waits for a dodge at most 60% of the time "
+               "and it always shows its warning before attacking. We also decided to check the results for each difficulty "
+               "every week, because he was worried that the game could become too hard."),
+          h("Chosen Models and Final Test", 1),
+          para(f"Following our rule, we chose {A['chosen']} for the next action, {B['chosen']} for the attacks and "
+               f"{C['chosen']} for the dodge. We trained them again with the training and validation data together, and then "
+               f"we used the test data only once. Table 14 shows the final results, and Table 15 checks the success criteria.")]
+    rows = [["Task", "Model", "Test result"]]
     for k, v in A["test"].items():
-        rows.append(["Next action", k, f"accuracy {pct(v['accuracy'])}, macro-F1 {f3(v['macro_f1'])}"])
+        rows.append(["Next action", k, f"Accuracy {pct(v['accuracy'])}"])
     for k, v in B["test"].items():
-        rows.append(["Hit", k, f"Brier {f3(v['brier'])}, AUC {f3(v['roc_auc'])}"])
+        rows.append(["Hit", k, f"Brier {f3(v['brier'])}"])
     for k, v in C["test"].items():
         rows.append(["Dodge", k, f"{f3(v['mean_error_px'], 1)} px"])
-    s += [table(rows, [1.0, 2.9, 2.1])]
-    sv = R["serving"]
-    crit = [("S1", at["accuracy"] - A["test"]["Majority class"]["accuracy"] >= 0.10, f"{pct(at['accuracy'])} vs {pct(A['test']['Majority class']['accuracy'])}"),
-            ("S2", at["accuracy"] >= A["test"][IG]["accuracy"], f"{pct(at['accuracy'])} vs {pct(A['test'][IG]['accuracy'])}"),
-            ("S3", bt["brier"] < B["test"][IB]["brier"] and bt["brier"] < B["test"]["Constant hit rate"]["brier"], f"{f3(bt['brier'])} vs {f3(B['test'][IB]['brier'])} and {f3(B['test']['Constant hit rate']['brier'])}"),
-            ("S4", C["test"][ck]["mean_error_px"] < C["test"]["In-game running mean"]["mean_error_px"], f"{f3(C['test'][ck]['mean_error_px'], 1)} px vs {f3(C['test']['In-game running mean']['mean_error_px'], 1)} px"),
+    s += apa_table("Final Results With the Test Data", rows, [1.2, 3.4, 1.9])
+    crit = [("S1", at["accuracy"] - maj >= 0.10, f"{pct(at['accuracy'])} vs. {pct(maj)}"),
+            ("S2", at["accuracy"] >= A["test"][IG]["accuracy"], f"{pct(at['accuracy'])} vs. {pct(A['test'][IG]['accuracy'])}"),
+            ("S3", bt["brier"] < B["test"][IB]["brier"] and bt["brier"] < B["test"]["Constant hit rate"]["brier"],
+             f"{f3(bt['brier'])} vs. {f3(B['test'][IB]['brier'])} and {f3(B['test']['Constant hit rate']['brier'])}"),
+            ("S4", C["test"][ck]["mean_error_px"] < C["test"]["In-game running mean"]["mean_error_px"],
+             f"{f3(C['test'][ck]['mean_error_px'], 1)} px vs. {f3(C['test']['In-game running mean']['mean_error_px'], 1)} px"),
             ("S5", sv["next_ms"] < 50 and sv["hit_ms"] < 50, f"{f3(sv['next_ms'], 1)} ms and {f3(sv['hit_ms'], 1)} ms")]
-    s += [Spacer(1, 8), table([["Criterion", "Result", "Met?"]] + [[c, r, "Yes" if ok else "No"] for c, ok, r in crit], [1.0, 4.0, 1.0]),
-          picture(IMG / "app_phase4.png", 6.0, crop=(0, 860, 1280, 1700), caption="Figure 12. Phase 4 page in the Flask app.")]
+    s += apa_table("Check of the Success Criteria", [["Code", "Result", "Met"]] + [[c, r, "Yes" if ok else "No"] for c, ok, r in crit],
+                   [0.8, 4.6, 1.1])
 
-    # ------------------------------------------------------------------ 7. phase 5
-    s += [h("7. Phase 5: Model Deployment"),
-          h("7.1 Saved Files", 1),
-          table([["File", "What it has"],
-                 ["models/next_action.joblib", "The chosen next-action model with its preprocessing (one sklearn Pipeline)."],
-                 ["models/hit.joblib", "The chosen hit model with its preprocessing."],
-                 ["models/dodge.joblib", "The dodge model (global average and its weight)."],
-                 ["models/model_card.json", "Data source, date, features, test results and library version."]],
-                [2.1, 3.9]),
-          para("The file <i>src/umbral_ml/predict.py</i> creates the features in exactly the same way as in training. So the "
-               f"training and the app cannot be different. One prediction takes about {f3(sv['next_ms'], 0)} ms."),
-          h("7.2 Flask Web Application", 1),
-          table([["Page", "What it does"],
-                 ["/", "Cover of the project: the problem, the main results and links."],
-                 ["/phase/1 to /phase/6", "One page for each CRISP-ML phase, with tables, charts and decisions."],
-                 ["/demo", "Live demo: you write the last actions of a player and the situation; the app answers the next action and the hit probability."],
-                 ["/api/predict/next, /api/predict/hit, /api/predict/dodge", "The same predictions in JSON, for other programs (like the game)."],
-                 ["/api/health, /monitoring/live", "State of the app and the last predictions (for monitoring)."],
-                 ["/report.pdf", "This report."]], [2.3, 3.7]),
-          picture(IMG / "app_home.png", 6.0, crop=(0, 0, 1280, 1000), caption="Figure 13. Cover page of the Flask app."),
-          picture(IMG / "app_demo.png", 6.0, crop=(0, 230, 1280, 1320), caption="Figure 14. The live demo with a prediction."),
-          h("7.3 Inputs and Outputs", 1),
-          table([["Input", "Example"], ["history", "[\"shoot\", \"shoot\", \"dodge\"] (last actions, oldest first)"],
-                 ["w, mode, diff", "2, \"story\", 1 (world, game mode, difficulty)"], ["hp, ne, boss", "4, 160, true (life, distance, boss fight)"],
-                 ["move + situation", "\"feint\", close = 1, blocking = 1 (for the hit question)"]], [1.6, 4.4]),
-          para("Output: the predicted action and its probability, the probability of every action, what the game model would say, "
-               "and the time of the prediction. For the hit question: the probability that the attack hits."),
-          h("7.4 How to Run It", 1)]
-    s += bullets(["<b>Dependencies:</b> Python 3.14, Flask, scikit-learn, pandas, numpy, matplotlib, joblib, reportlab, requests, gunicorn (file requirements.txt).",
-                  "<b>Install:</b> pip install -r requirements.txt",
-                  "<b>Train everything:</b> python pipeline.py (data, models, monitoring and this PDF, about 5 minutes).",
-                  "<b>Run the app:</b> python -m flask --app app.app run",
-                  "<b>Online:</b> Render runs gunicorn app.app:app (file render.yaml)."])
-    s += [h("7.5 First Steps for a New User", 1)]
-    s += bullets(["Open the cover page and read the six phases in order (menu at the top).",
-                  "Open <b>Demo</b>. Write some actions with commas, for example: shoot, shoot, dodge.",
-                  "Choose the world, the life and the distance, and press <b>Predict</b>.",
-                  "Read the predicted action and compare it with the game model.",
-                  "In Phase 5 you can send an opinion or report a problem."])
-    s += [h("7.6 Plan to Connect with the System of Activity 2", 1),
-          para("The system of Activity 2 is our game, its website and the Supabase database (accounts, saved games and records)."),
-          table([["Step", "What", "Who", "State"],
-                 ["1. Data", "The game sends anonymous play data to Supabase.", "J.P / J.A", "Done"],
-                 ["2. Training", "pipeline.py reads the data and trains every Monday (GitHub Actions).", "J.A", "Done"],
-                 ["3. Serving", "The Flask app on Render gives the predictions.", "J.Q", "Done"],
-                 ["4. In the game", "The boss asks the API when a fight starts and every 2 seconds. If there is no internet, it uses the game model.", "J.P", "Planned"],
-                 ["5. Feedback", "Accuracy per account, the report form of the game and the form of the app.", "J.Q / J.A", "Running"]],
-                [1.0, 3.2, 0.9, 0.9]),
-          h("7.7 Monitoring, Problems and Opinions", 1)]
-    s += bullets(["Every prediction is saved with its time, model, inputs, output and speed (/monitoring/live).",
-                  "Problems can be reported in the app, in the game (Pause, Report error) or on GitHub. A big problem (the app does not work) is fixed the same day, or we go back to the last model.",
-                  "Every model is saved in Git with its model card, so we can always go back.",
-                  "Users can give their opinion with a score from 1 to 5. We read them every week."])
+    # ------------------------------------------------------------------ phase 5
+    s += [h("Phase 5: Model Deployment"),
+          h("Saved Model and Web Application", 1),
+          para("We saved each chosen model together with its preprocessing in one file, using joblib. We also saved a small "
+               "model card with the data source, the date, the features and the test results. The code that makes predictions "
+               "creates the features in exactly the same way as the training code, so both parts cannot be different. One "
+               f"prediction takes about {f3(sv['next_ms'], 0)} milliseconds."),
+          para("The web application is made with Flask and it is published on Render. It has a cover page, one page for each "
+               "phase of CRISP-ML, a live demo and a small API. Figure 9 shows the cover page and Figure 10 shows the demo, "
+               "where you write the last actions of a player and the application answers.")]
+    s += apa_figure(IMG / "app_home.png", "Cover Page of the Flask Application", 6.3, crop=(0, 0, 1280, 1000))
+    s += apa_figure(IMG / "app_demo.png", "Live Demo With a Prediction", 6.3, crop=(0, 230, 1280, 1320),
+                    note="The bars show the probability of each action. The application also shows what the current game model would say.")
+    s += [h("Inputs, Outputs and How to Run It", 1),
+          para("The demo and the API receive the last actions of the player (for example shoot, shoot, dodge), the world, "
+               "the game mode, the difficulty, the life, the distance to the enemy and whether it is a boss fight. For the "
+               "attacks they also receive the name of the attack and its situation. The output is the predicted action with "
+               "its probability, the probability of every action, what the game model would say, and the time of the "
+               "prediction. For an attack, the output is the probability that it hits."),
+          para("To run the project, a person needs Python 3.14 and the libraries in the file requirements.txt. The command "
+               "pip install -r requirements.txt installs them, python pipeline.py repeats the whole process in about five "
+               "minutes, and python -m flask --app app.app run starts the application. On Render the application runs with "
+               "gunicorn, and the configuration is in the file render.yaml."),
+          para("For a new user we wrote simple first steps. First, open the cover page and read the phases in order. Then "
+               "open the demo, write some actions separated by commas, choose the situation and press Predict. Finally, read "
+               "the answer and compare it with the game model. On the page of Phase 5 there is also a form to send an "
+               "opinion or report a problem."),
+          h("Plan to Connect With the System of Activity 2", 1),
+          para("The information system of Activity 2 is our game, its website and the Supabase database, where we keep the "
+               "accounts, the saved games and the records. Table 16 shows how the model connects to it.")]
+    s += apa_table("Integration Plan With the System of Activity 2", [
+        ["Step", "What happens", "Person", "State"],
+        ["Data", "The game sends the anonymous play data to Supabase.", "J.P and J.A", "Done"],
+        ["Training", "The pipeline reads the data and trains every Monday with GitHub Actions.", "J.A", "Done"],
+        ["Serving", "The Flask application on Render gives the predictions.", "J.Q", "Done"],
+        ["In the game", "The boss asks the API when a fight starts and every 2 seconds. Without internet it uses the game model.", "J.P", "Planned"],
+        ["Feedback", "Accuracy per account, the report form of the game and the form of the application.", "J.Q and J.A", "Running"]],
+        [1.1, 3.3, 1.2, 0.9])
+    s += [h("Monitoring, Problems and Opinions", 1),
+          para("Every prediction is saved with its time, model, inputs, output and speed, and the page /monitoring/live "
+               "shows a summary. People can report a problem in the application, in the game or on GitHub. A big problem, "
+               "for example when the application does not answer, must be fixed the same day, or we go back to the last "
+               "model. This is possible because every model is saved in Git with its model card. Users can also give their "
+               "opinion with a score from 1 to 5, and we read the opinions every week.")]
 
-    # ------------------------------------------------------------------ 8. phase 6
-    th = M["thresholds"]
-    s += [h("8. Phase 6: Monitoring and Maintenance"),
-          h("8.1 What We Watch", 1),
-          table([["Indicator", "Where", "Alarm"],
-                 ["App working and speed", "/api/health, /monitoring/live", "More than 50 ms, or any error"],
-                 ["Real events per day", "Supabase (REAL)", "0 events when people are playing"],
-                 ["Next-action accuracy (2-week average)", "Real actions vs predictions", f"{int(th['acc_drop'] * 100)} points lower than the first {th['baseline_weeks']} weeks"],
-                 ["Game model accuracy, all accounts", f"Supabase (REAL: {pct(real_acc)})", "Same rule"],
-                 ["Changes in the data (PSI)", "New week vs first weeks", f"Warning over {th['psi_warn']}, alarm over {th['psi_alert']}"],
-                 ["Opinions and problems", "Forms", "Any big problem"]], [2.2, 2.0, 1.8]),
-          h("8.2 How We Find Drift", 1),
-          para("We use the <b>Population Stability Index (PSI)</b>. It compares the data of a new week with the data of the first "
-               "weeks. If PSI is small, the data is stable. If PSI is bigger than 0.20, the data changed a lot. We also measure the "
-               "accuracy every week with the real actions."),
-          h("8.3 When, Who and When to Train Again", 1),
-          table([["What", "When", "Who"],
-                 ["Automatic training and report (GitHub Actions)", "Every Monday", "Automatic; J.A checks it"],
-                 ["Review the indicators", "Every week", "J.A (model and data), J.Q (web and reports)"],
-                 ["Check the game (fair bosses, works offline)", "Every new game version", "J.P"],
-                 ["Full review of the project", "Every semester or after a big update", "J.A, J.P and J.Q"]], [2.6, 1.6, 1.8]),
-          para(f"We train again when: PSI is over {th['psi_alert']}; the accuracy falls {int(th['acc_drop'] * 100)} points; a game update "
-               "changes the fights; or the real data doubles. We only use a new model if it passes the Phase 4 rule."),
-          h("8.4 First Monitoring Test (SIMULATED data)", 1),
-          para("This test uses <b>simulated</b> data. We created 8 weeks of new players. From week 4 we changed the way they play "
-               "(more dodges and fights from farther away), like after a game update. Then we ran the same pipeline as in production."),
-          picture(FIG / "fig_mon_psi.png", 5.6, caption="Figure 15. PSI per week (SIMULATED)."),
-          picture(FIG / "fig_mon_accuracy.png", 5.6, caption="Figure 16. Accuracy per week (SIMULATED).")]
-    rows = [["Week", "Accuracy", "2-week avg.", "PSI actions", "PSI distance", "State"]]
+    # ------------------------------------------------------------------ phase 6
+    s += [h("Phase 6: Monitoring and Maintenance"),
+          h("What We Watch", 1),
+          para("A model is not finished when it is published. Players change, and the game changes too. Table 17 shows the "
+               "indicators that we decided to watch and when each one gives an alarm.")]
+    s += apa_table("Indicators for Monitoring", [
+        ["Indicator", "Source", "Alarm"],
+        ["Application working and speed", "/api/health and /monitoring/live", "More than 50 ms or any error"],
+        ["Real events per day", "Supabase (REAL)", "No events while people are playing"],
+        ["Accuracy of the next action, two-week average", "Real actions and predictions", f"{int(th['acc_drop'] * 100)} points below the first {th['baseline_weeks']} weeks"],
+        ["Accuracy of the game model for all accounts", f"Supabase (REAL, {pct(real_acc)} now)", "Same rule"],
+        ["Change in the data (PSI)", "New week and first weeks", f"Warning above {th['psi_warn']}, alarm above {th['psi_alert']}"],
+        ["Opinions and problems", "Forms", "Any big problem"]],
+        [2.4, 2.2, 1.9])
+    s += [h("How We Detect Drift", 1),
+          para("To see if the data changes we use the Population Stability Index, or PSI (Siddiqi, 2006). It compares the data "
+               "of a new week with the data of the first weeks. A small PSI means that the data is stable, and a PSI above "
+               "0.20 means a big change. We also measure the accuracy every week with the real actions, because the play log "
+               "already contains the true next action."),
+          h("Schedule, People and Retraining", 1),
+          para("GitHub Actions trains the models again every Monday and creates a new version of this report. Jeison "
+               "checks the model and the data every week, Johan checks the website and the reports, and Juan Pablo checks "
+               "the game each time we publish a new version. Once a semester, or after a big update, the three of us review "
+               f"the whole project. We train the model again when the PSI is above {th['psi_alert']}, when the accuracy falls "
+               f"{int(th['acc_drop'] * 100)} points, when an update changes the fights, or when the real data doubles. A new "
+               "model replaces the old one only if it passes the same rule of Phase 4."),
+          h("First Monitoring Test With Simulated Data", 1),
+          para("We wanted to test the plan before having real problems, so we made a test with simulated data. We created "
+               "eight weeks of new players, and from week 4 we changed the way they play, with more dodges and fights from "
+               "farther away, like after a game update. Then we ran the same pipeline as in production. Figures 11 and 12 and "
+               "Table 18 show the results.")]
+    s += apa_figure(FIG / "fig_mon_psi.png", "Population Stability Index per Week (Simulated Data)", 6.0)
+    s += apa_figure(FIG / "fig_mon_accuracy.png", "Accuracy per Week (Simulated Data)", 6.0)
+    rows = [["Week", "Accuracy", "Two-week average", "PSI actions", "PSI distance", "State"]]
     for w in M["weeks"]:
-        rows.append([f"{w['week']} (SIM)", pct(w["accuracy"]), pct(w["accuracy_2w"]), f3(w["psi_target"]), f3(w["psi_ne"]), w["status"]])
-    s += [table(rows, [0.9, 0.9, 1.0, 1.0, 1.0, 1.2]),
-          para(f"The PSI found the change: the first alarm is in week <b>{M['first_drift_alert']}</b>. "
+        rows.append([f"{w['week']}", pct(w["accuracy"]), pct(w["accuracy_2w"]), f3(w["psi_target"]), f3(w["psi_ne"]), w["status"]])
+    s += apa_table("Results of the Monitoring Test", rows, [0.7, 1.0, 1.3, 1.1, 1.2, 1.2],
+                   note="All the weeks use simulated data.")
+    s += [para(f"The PSI found the change, and the first alarm appeared in week {M['first_drift_alert']}. "
                + (f"The accuracy also fell in week {M['first_perf_alert']}." if M["first_perf_alert"] else
-                  "The accuracy did not fall below the alarm line. This shows why we watch the data and not only the accuracy: the data warns us earlier.")),
-          picture(IMG / "app_phase6.png", 6.0, crop=(0, 1640, 1280, 2290), caption="Figure 17. Monitoring test in the Flask app.")]
+                  "The accuracy did not fall below the alarm line, so if we had looked only at the accuracy, we would not have "
+                  "seen the problem. This is why we watch the data and not only the results.")),
+          ]
 
-    # ------------------------------------------------------------------ 9. debugging note
-    s += [h("9. A Debugging Note: Two Real Bugs"),
-          para("Like in our last project, the most important lessons came from bugs."),
-          h("9.1 The Columns in the Wrong Order", 1),
-          para("In the first version, the best model had only <b>10% accuracy</b> on the test data. This was worse than guessing. "
-               "The reason: scikit-learn gives the probabilities in <b>alphabetical order</b> (block, dodge, hide...), but our code "
-               "read them in the game order (shoot, melee, block...). So the model was right, but we read the wrong column. "
-               f"We fixed it with one small function (<i>proba_a</i>) that orders the columns by name. After the fix the accuracy was {pct(at['accuracy'])}. "
-               "The same problem also changed the log loss, so we fixed it there too."),
-          h("9.2 The App Failed Only on Render", 1),
-          para("On our computer the app worked. On Render, the demo showed \"Internal Server Error\". To find the reason, we "
-               "added an error handler that writes the full error in the log. The error was an <b>ImportError</b> in scikit-learn. "
-               "We had started a thread that loads the models in the background, and the first visitor loaded scikit-learn at the "
-               "same time. The fix: load the models <b>before</b> the app starts. Now every error is also saved, which is part of "
-               "the incident plan of Phase 5.")]
+    # ------------------------------------------------------------------ debugging notes
+    s += [h("Debugging Notes"),
+          para("Like in our last project, some of the most important lessons came from bugs. We want to describe two of them."),
+          h("The Probabilities in the Wrong Order", 1),
+          para("In the first version, our best model got only about 10% accuracy with the test data. That was worse than "
+               "guessing, and for some minutes we thought that the whole project was wrong. Then we found the reason: "
+               "scikit-learn returns the probabilities in alphabetical order (block, dodge, hide, and so on), but our code "
+               "read them in the order of the game (shoot, melee, block, and so on). The model was fine, but we were reading "
+               f"the wrong column. We wrote a small function that orders the columns by name, and the accuracy went to "
+               f"{pct(at['accuracy'])}. The same mistake was also changing the log loss, so we fixed it there too."),
+          h("The Application Failed Only on Render", 1),
+          para("On our computers the application worked, but on Render the demo showed the message Internal Server Error. To "
+               "find the reason we added an error handler that writes the full error in the log. The error was an ImportError "
+               "inside scikit-learn. We had added a thread that loaded the models in the background, and the first visitor "
+               "loaded scikit-learn at the same time. The solution was to load the models before the application starts to "
+               "receive visitors. Since then, every error is also saved, which is part of our plan for reporting problems.")]
 
-    # ------------------------------------------------------------------ 10. git
-    s += [h("10. Git and GitHub Workflow"),
-          para("We used Git and GitHub to keep the project organized. The project has its own repository, separate from the game."),
-          para(f"<b>Repository:</b> {REPO_URL}<br/><b>Branch:</b> master"),
-          para("Workflow: code on the computer, then commit, then push to master. Each push makes Render update the app. Every "
-               "Monday, GitHub Actions trains the models again and makes a new commit (\"Weekly retrain\")."),
-          table([["Commit", "What it did"],
-                 ["UMBRAL CRISP-ML: six phases, pipeline, models, Flask app and report", "First version of everything."],
-                 ["Weekly retrain", "First automatic training on GitHub (Linux): same results as on our computer."],
-                 ["App: load the models at start-up", "Faster first prediction."],
-                 ["Weekly retrain ready for the first real data", "Works with few players (split by session)."],
-                 ["App: log every error / load the models before serving", "Found and fixed the Render bug (Section 9.2)."]],
-                [3.0, 3.0]),
-          para("In the game repository we also added the anonymous play log (<i>scripts/ml_log.gd</i>) and the database script "
-               "(<i>tools/supabase_ml_log.sql</i>).")]
+    # ------------------------------------------------------------------ git
+    s += [h("Git and GitHub Workflow"),
+          para(f"We used Git and GitHub to keep the project organized. The project has its own repository ({REPO_URL}), "
+               "separate from the repository of the game, and we work on the master branch. The workflow is simple: we "
+               "change the code on the computer, make a commit and push it to master. Each push makes Render update the "
+               "application, and every Monday GitHub Actions trains the models again and makes a new commit called Weekly "
+               "retrain. The main commits were the first version of everything, the first automatic training on GitHub "
+               "(with the same results as on our computers), the change that makes the first prediction faster, the "
+               "preparation for the first real data, and the fix of the Render error."),
+          para("In the repository of the game we also added the anonymous play log and the database script that creates the "
+               "table and its functions in Supabase.")]
 
-    # ------------------------------------------------------------------ 11-13
-    s += [h("11. Discussion"),
-          para("This project shows some important Machine Learning lessons:")]
-    s += bullets([f"<b>The game model was already good.</b> On new players it gets {pct(A['test'][IG]['accuracy'])}, and the most common action "
-                  f"gets only {pct(A['test']['Majority class']['accuracy'])}. With real players it is right {pct(real_acc)} of the time.",
-                  "<b>Each player is different.</b> General models only work well when they know the history of the player.",
-                  f"<b>Sharing helps for the hit question.</b> One model for all players ({B['chosen']}) is better than one small model "
-                  f"for each player: Brier {f3(bt['brier'])} vs {f3(B['test'][IB]['brier'])}.",
-                  "<b>Small bugs can change everything.</b> The wrong column order made a good model look terrible (Section 9).",
-                  "<b>Watch the data, not only the accuracy.</b> In the monitoring test, the PSI found the change first."])
-    s += [h("12. Conclusion"),
-          para("This project shows a full CRISP-ML process, from the problem to a working web application. The main results are:")]
-    s += bullets(["We added an anonymous play log to the game, with an option to turn it off.",
-                  "We cleaned the data, created features and split it by player, without data leakage.",
-                  f"We compared {len(R['experiments'])} experiments and chose the models with a fixed rule.",
-                  f"The chosen next-action model got {pct(at['accuracy'])} on the test data (game model: {pct(A['test'][IG]['accuracy'])}).",
-                  "The models are in a Flask app on Render, with a live demo and an API.",
-                  "The system trains again every week and watches the data for drift."])
-    s += [h("Future Work", 1)]
-    s += bullets(["Train with real data when there are enough players, and repeat the expert review.",
-                  "Connect the bosses of the game to the API (Section 7.6).",
-                  "Try sequence models, such as a small recurrent neural network, with more data.",
-                  "Ask players if the bosses feel fair, and measure it."])
-    s += [h("13. References")]
-    for ref in ["Studer, S., Bui, T. B., Drescher, C., Hanuschkin, A., Winkler, L., Peters, S., & Müller, K.-R. (2021). Towards CRISP-ML(Q): A machine learning process model with quality assurance methodology. <i>Machine Learning and Knowledge Extraction, 3</i>(2), 392–413.",
-                "Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., ... & Duchesnay, E. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research, 12</i>, 2825–2830.",
-                "Brier, G. W. (1950). Verification of forecasts expressed in terms of probability. <i>Monthly Weather Review, 78</i>(1), 1–3.",
-                "Breiman, L. (2001). Random forests. <i>Machine Learning, 45</i>(1), 5–32.",
-                "Yannakakis, G. N., & Togelius, J. (2018). <i>Artificial intelligence and games</i>. Springer.",
-                "Siddiqi, N. (2006). <i>Credit risk scorecards</i>. Wiley. (Population Stability Index)",
-                "Pallets Projects. (2024). <i>Flask documentation</i>. https://flask.palletsprojects.com/",
-                "Render. (2026). <i>Blueprint specification</i>. https://render.com/docs/blueprint-spec"]:
-        s.append(Paragraph(ref, ParagraphStyle("ref", parent=P, leftIndent=18, firstLineIndent=-18)))
+    # ------------------------------------------------------------------ discussion / conclusion
+    s += [h("Discussion"),
+          para(f"The first lesson for us is that the game model was already good. With new players it got "
+               f"{pct(A['test'][IG]['accuracy'])}, while the simplest guess got {pct(maj)}, and with real players it is right "
+               f"{pct(real_acc)} of the time. The new model is a little better ({pct(at['accuracy'])}) and it gives better "
+               "probabilities, but the difference is not huge. We think this is an honest result and not a bad one."),
+          para(f"The second lesson is that each player is different. General models only worked when they knew the history of "
+               f"the player. For the attacks the result was the opposite: one model for all players ({B['chosen']}) was better "
+               f"than one small model for each player, with a Brier score of {f3(bt['brier'])} against {f3(B['test'][IB]['brier'])}. "
+               "Sharing information helps when each player has few attacks."),
+          para("The last lessons are about the process. A very small bug made a good model look terrible, so now we always "
+               "check the results with a simple baseline. And in the monitoring test the PSI found the change before the "
+               "accuracy did, so watching the data is as important as watching the results."),
+          h("Conclusion"),
+          para(f"This project shows a complete CRISP-ML process, from the problem to a working web application. We added an "
+               f"anonymous play log to the game, we cleaned the data and split it by player without data leakage, and we "
+               f"compared {len(R['experiments'])} experiments. The chosen model for the next action reached "
+               f"{pct(at['accuracy'])} with the test data, against {pct(A['test'][IG]['accuracy'])} for the game model. The "
+               "models are published in a Flask application with a demo and an API, and the system trains again every week "
+               "and watches the data for drift. For us, the most valuable part was learning to check our own work: a fixed "
+               "rule, a simple baseline and data that the model never saw."),
+          h("Future Work", 1),
+          para("We want to train the models with real data when there are enough players and repeat the review with the "
+               "domain expert. We also want to connect the bosses of the game to the API, try sequence models such as a small "
+               "recurrent neural network when we have more data, and ask players if the bosses feel fair.")]
+
+    # ------------------------------------------------------------------ references (APA 7, alphabetical, hanging indent)
+    s += [PageBreak(), h("References")]
+    for ref in [
+        "Breiman, L. (2001). Random forests. <i>Machine Learning, 45</i>(1), 5–32. https://doi.org/10.1023/A:1010933404324",
+        "Brier, G. W. (1950). Verification of forecasts expressed in terms of probability. <i>Monthly Weather Review, 78</i>(1), 1–3. https://doi.org/10.1175/1520-0493(1950)078%3C0001:VOFEIT%3E2.0.CO;2",
+        "Dawid, A. P. (1984). Present position and potential developments: Some personal views. Statistical theory: The prequential approach. <i>Journal of the Royal Statistical Society: Series A, 147</i>(2), 278–292. https://doi.org/10.2307/2981683",
+        "Pallets Projects. (2024). <i>Flask documentation</i>. https://flask.palletsprojects.com/",
+        "Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., &amp; Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research, 12</i>, 2825–2830.",
+        "Siddiqi, N. (2006). <i>Credit risk scorecards: Developing and implementing intelligent credit scoring</i>. Wiley.",
+        "Studer, S., Bui, T. B., Drescher, C., Hanuschkin, A., Winkler, L., Peters, S., &amp; Müller, K.-R. (2021). Towards CRISP-ML(Q): A machine learning process model with quality assurance methodology. <i>Machine Learning and Knowledge Extraction, 3</i>(2), 392–413. https://doi.org/10.3390/make3020020",
+        "Yannakakis, G. N., &amp; Togelius, J. (2018). <i>Artificial intelligence and games</i>. Springer. https://doi.org/10.1007/978-3-319-63519-4",
+    ]:
+        s.append(Paragraph(ref, REF))
 
     out = REPORTS / FILE_NAME
     for old in REPORTS.glob("*.pdf"):

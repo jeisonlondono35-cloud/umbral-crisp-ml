@@ -15,22 +15,31 @@ SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#62
 CHOSEN = SERIES[0]
 OTHER = "#b9b8b2"
 BASE = "#8a8984"
-INK, INK2, GRID, SURF = "#0b0b0b", "#52514e", "#e6e5e0", "#fcfcfb"
+INK, INK2, GRID, SURF = "#000000", "#000000", "#e6e5e0", "#ffffff"
 
 plt.rcParams.update({
     "figure.facecolor": SURF, "axes.facecolor": SURF, "savefig.facecolor": SURF,
     "axes.edgecolor": GRID, "axes.labelcolor": INK2, "xtick.color": INK2, "ytick.color": INK2,
     "text.color": INK, "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.8,
-    "axes.spines.top": False, "axes.spines.right": False, "font.size": 9,
+    "axes.spines.top": False, "axes.spines.right": False, "font.size": 10,
     "axes.titlesize": 10.5, "axes.titleweight": "bold", "axes.titlelocation": "left",
     "legend.frameon": False, "figure.dpi": 110,
+    # same font as the report (APA, Arial); DejaVu Sans if Arial is not installed (Linux)
+    "font.family": "sans-serif", "font.sans-serif": ["Arial", "Liberation Sans", "DejaVu Sans"],
 })
+import logging  # noqa: E402
+
+logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
 
 
 def save(fig, name: str) -> str:
+    """No title inside the image: in the report the APA caption (number + title) goes above the figure,
+    and in the app the section heading says what it is."""
+    for ax in fig.axes:
+        ax.set_title("")
     fig.tight_layout()
     path = FIG / f"{name}.png"
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=150, bbox_inches="tight", pad_inches=0.08)
     plt.close(fig)
     return path.name
 
