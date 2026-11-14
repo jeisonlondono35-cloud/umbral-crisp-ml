@@ -28,8 +28,9 @@ app = Flask(__name__)
 
 
 def _warm_up() -> None:
-    """Load the models and make one prediction at start-up, so the first visitor does not wait (~13 s on
-    Render's free instance)."""
+    """Load the models and make one prediction at start-up, BEFORE serving, so the first visitor does not
+    wait (~13 s on Render's free instance). It must not run in a background thread: a request importing
+    scikit-learn at the same time hit a half-initialised module (ImportError, Nov 2026)."""
     try:
         P.predict_next(["shoot", "dodge"], {"boss": True})
         P.predict_hit("dive", {"close": 1}, {})
@@ -37,9 +38,7 @@ def _warm_up() -> None:
         print("warm-up failed:", e)
 
 
-import threading  # noqa: E402
-
-threading.Thread(target=_warm_up, daemon=True).start()
+_warm_up()
 LIVE_LOG = MON / "live_predictions.jsonl"
 FEEDBACK = MON / "feedback.jsonl"
 
