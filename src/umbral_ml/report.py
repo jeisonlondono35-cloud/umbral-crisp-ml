@@ -102,25 +102,28 @@ def seriation(items):
     return [Paragraph(t, LIST, bulletText="•") for t in items]
 
 
-def apa_table(title, rows, widths, note=None):
-    """APA 7 table: bold number, italic title, black lines on every cell (asked by the team), optional note."""
-    NUM["table"] += 1
+def apa_table(title, rows, widths, note=None, label=None):
+    """APA 7 table: bold number, italic title, black lines on every cell (asked by the team), optional note.
+    `label` (e.g. "B1") is used in the appendices instead of the running number."""
+    if not label:
+        NUM["table"] += 1
     data = [[Paragraph(str(c), CELLH if i == 0 else CELL) for c in r] for i, r in enumerate(rows)]
     t = Table(data, colWidths=[w * inch for w in widths], repeatRows=1, hAlign="LEFT")
     t.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.75, BLACK), ("VALIGN", (0, 0), (-1, -1), "TOP"),
                            ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                            ("LEFTPADDING", (0, 0), (-1, -1), 3), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
-    out = [Spacer(1, 6), Paragraph(f"Table {NUM['table']}", CAPN), Paragraph(title, CAPT), t]
+    out = [Spacer(1, 6), Paragraph(f"Table {label or NUM['table']}", CAPN), Paragraph(title, CAPT), t]
     out.append(Paragraph(f"<i>Note.</i> {note}", NOTE) if note else Spacer(1, 14))
     return out
 
 
-def apa_figure(path: Path, title, width_in, crop=None, note=None):
-    """APA 7 figure: bold number, italic title, the image, optional note."""
+def apa_figure(path: Path, title, width_in, crop=None, note=None, label=None):
+    """APA 7 figure: bold number, italic title, the image, optional note (`label` for appendices)."""
     from PIL import Image as PI
     if not path.exists():
         return []
-    NUM["figure"] += 1
+    if not label:
+        NUM["figure"] += 1
     im = PI.open(path)
     if crop:
         TMP.mkdir(exist_ok=True)
@@ -133,7 +136,7 @@ def apa_figure(path: Path, title, width_in, crop=None, note=None):
     if height > 6.6:
         width_in, height = width_in * 6.6 / height, 6.6
     img = Image(str(path), width=width_in * inch, height=height * inch, hAlign="LEFT")
-    parts = [Spacer(1, 6), Paragraph(f"Figure {NUM['figure']}", CAPN), Paragraph(title, CAPT), img]
+    parts = [Spacer(1, 6), Paragraph(f"Figure {label or NUM['figure']}", CAPN), Paragraph(title, CAPT), img]
     parts.append(Paragraph(f"<i>Note.</i> {note}", NOTE) if note else Spacer(1, 14))
     return [KeepTogether(parts)]
 
@@ -326,6 +329,7 @@ def main() -> None:
         ["S5", "Speed: one prediction takes less than 50 milliseconds."],
         ["S6", "The model is chosen with the validation data, and the test data is used only once, at the end."]],
         [0.8, 5.7])
+    s.append(para("Figure A1 in Appendix A shows how this phase looks in our web application."))
 
     # ------------------------------------------------------------------ phase 2
     s += [h("Phase 2: Data Engineering"),
@@ -364,6 +368,10 @@ def main() -> None:
         ["Validation", D["split"]["val"], f"{D['split_rows']['actions']['val']:,}", f"{D['split_rows']['hits']['val']:,}", "Choose the best model"],
         ["Test", D["split"]["test"], f"{D['split_rows']['actions']['test']:,}", f"{D['split_rows']['hits']['test']:,}", "One final check at the end"]],
         [1.1, 0.8, 1.0, 0.9, 2.7], note=f"Groups are {'players' if by_player else 'game sessions'}.")
+    s.append(para("To show the cleaning with real rows and not only with numbers, Appendix B has the same six actions of "
+                  "one player twice: first as the game sent them (Table B1) and then as the models receive them (Table B2). "
+                  "In those rows you can see a distance of 9999 that becomes a missing value, and a long pause that makes "
+                  "the last two actions go back to start. Figure A2 shows the page of this phase in the application."))
 
     # ------------------------------------------------------------------ phase 3
     s += [h("Phase 3: Model Engineering"),
@@ -417,7 +425,7 @@ def main() -> None:
                "short groups of actions. We added the history of each player because every player has a style. We gave each "
                "attack its own effect because, for example, a fake attack beats the shield but a jump beats a wave on the "
                "ground. Finally, we tested the online models step by step, first predicting and then learning, because that "
-               "is exactly how they work in the game.")]
+               "is exactly how they work in the game. Figure A3 shows the page of this phase in the application.")]
 
     # ------------------------------------------------------------------ phase 4
     lc = A["learning_curve"]
@@ -495,6 +503,8 @@ def main() -> None:
             ("S5", sv["next_ms"] < 50 and sv["hit_ms"] < 50, f"{f3(sv['next_ms'], 1)} ms and {f3(sv['hit_ms'], 1)} ms")]
     s += apa_table("Check of the Success Criteria", [["Code", "Result", "Met"]] + [[c, r, "Yes" if ok else "No"] for c, ok, r in crit],
                    [0.8, 4.6, 1.1])
+    s.append(para("All the success criteria were met with this data. Figure A4 shows the page of this phase in the application."
+                  if all(ok for _, ok, _ in crit) else "Figure A4 shows the page of this phase in the application."))
 
     # ------------------------------------------------------------------ phase 5
     s += [h("Phase 5: Model Deployment"),
@@ -539,7 +549,8 @@ def main() -> None:
                "shows a summary. People can report a problem in the application, in the game or on GitHub. A big problem, "
                "for example when the application does not answer, must be fixed the same day, or we go back to the last "
                "model. This is possible because every model is saved in Git with its model card. Users can also give their "
-               "opinion with a score from 1 to 5, and we read the opinions every week.")]
+               "opinion with a score from 1 to 5, and we read the opinions every week. Figure A5 shows the page of this "
+               "phase in the application.")]
 
     # ------------------------------------------------------------------ phase 6
     s += [h("Phase 6: Monitoring and Maintenance"),
@@ -583,6 +594,27 @@ def main() -> None:
                + (f"The accuracy also fell in week {M['first_perf_alert']}." if M["first_perf_alert"] else
                   "The accuracy did not fall below the alarm line, so if we had looked only at the accuracy, we would not have "
                   "seen the problem. This is why we watch the data and not only the results.")),
+          h("Risks, Quality Controls and Model Updates", 1),
+          para("We see six main risks. The first one is having few real players, and players who are friends of the team "
+               "and not typical players. The second one is drift after a game update, when the fights change. The third "
+               "one is bad data, for example a package that arrives twice or with strange values. The fourth one is a model "
+               "that is too strong, so the bosses feel unfair or too difficult, which was the main worry of our domain "
+               "expert. The fifth one is privacy, and the last one is the application being down."),
+          para("For each risk we have a control. The database only accepts packages with the right format and size, and "
+               "it accepts at most 8,000 events per player per hour. The cleaning rules of Phase 2 run every time we train. "
+               "The pipeline checks that no player appears in two parts of the data and that the preprocessing learns only "
+               "from the training data. The game model always stays inside the game as a backup, so if the API fails the "
+               "bosses still work. We look at the results for each difficulty every week. The play log uses random numbers "
+               "instead of names, and players can turn it off. Finally, the model, the data report and the model card are "
+               "saved together in Git, so we always know which data made each model and we can go back to an older one."),
+          para("The update process has five steps. First, GitHub Actions downloads the new real data and trains the "
+               "candidates again. Second, the new model is compared with the current one on new validation players, using "
+               "the same rule as in Phase 4. Third, if it is better and it passes the success criteria, it is saved with a "
+               "commit and Render publishes it. Fourth, if it is not better, we keep the current model and look for the "
+               "reason. Fifth, every run is written in the experiment log and in the model card. We have to be honest here: "
+               "in this first version the weekly run replaces the model automatically, and Jeison checks it after. "
+               "Automating the comparison of the second step is the next thing that we want to do. Figure A6 shows the "
+               "page of this phase in the application."),
           ]
 
     # ------------------------------------------------------------------ debugging notes
@@ -653,6 +685,51 @@ def main() -> None:
         "Yannakakis, G. N., &amp; Togelius, J. (2018). <i>Artificial intelligence and games</i>. Springer. https://doi.org/10.1007/978-3-319-63519-4",
     ]:
         s.append(Paragraph(ref, REF))
+
+    # ------------------------------------------------------------------ appendices (APA: after the references)
+    intro = (f"These screenshots come from the published application ({APP_URL}). Each phase has its own page, and "
+             "the menu at the top lets the user move between them.")
+    if sim:
+        intro += " The yellow message at the top says that the model results come from simulated players."
+    s += [PageBreak(), Paragraph("<b>Appendix A</b>", CEN), h("Screenshots of the Six Phases in the Application"), para(intro)]
+    for i, (name, title, crop) in enumerate([
+            ("app_phase1", "Page of Phase 1: Business and Data Understanding", (0, 60, 1280, 1250)),
+            ("app_phase2", "Page of Phase 2: Data Engineering", (0, 60, 1280, 1320)),
+            ("app_phase3", "Page of Phase 3: Model Engineering", (0, 60, 1280, 1250)),
+            ("app_phase4", "Page of Phase 4: Model Evaluation", (0, 60, 1280, 1700)),
+            ("app_phase5", "Page of Phase 5: Model Deployment", (0, 60, 1280, 1300)),
+            ("app_phase6", "Page of Phase 6: Monitoring and Maintenance", (0, 60, 1280, 1250))], start=1):
+        s += apa_figure(IMG / f"{name}.png", title, 6.4, crop=crop, label=f"A{i}")
+    ev = json.loads((ROOT / "data" / "processed" / "evidence.json").read_text(encoding="utf-8"))
+    txt = ("Table B1 shows six actions of one player exactly as the game sent them to the database. Table B2 shows "
+           "the same six actions after Phase 2, as the models receive them. We chose this player because one of the "
+           "actions has the value 9999 in the distance, so the cleaning is easy to see. Some columns are not shown "
+           "because they do not fit on the page.")
+    if sim:
+        txt += " These rows come from the simulated data."
+    s += [PageBreak(), Paragraph("<b>Appendix B</b>", CEN), h("The Same Data Before and After Processing"), para(txt)]
+
+    def fmt(v):
+        if v is None:
+            return "missing"
+        return f"{v:g}" if isinstance(v, float) else str(v)
+
+    s += apa_table("Raw Events as Sent by the Game",
+                   [["Player", "Time (ms)", "Action", "Gap (ms)", "Distance", "Life", "World", "Mode", "Diff."]] +
+                   [[r["pid"].replace("\u2026", "..."), fmt(r["t"]), r["a"], fmt(r["gap"]), fmt(r["ne"]), fmt(r["hp"]),
+                     fmt(r["w"]), r["m"], fmt(r["d"])] for r in ev["raw"]],
+                   [0.9, 0.85, 0.7, 0.8, 0.95, 0.5, 0.6, 0.65, 0.55],
+                   note="Player is a random id (shortened). Distance 9999 means that the game did not find an enemy.",
+                   label="B1")
+    s += apa_table("The Same Events After Processing",
+                   [["Order", "prev2", "prev1", "Start", "Distance", "Boss", "hist shoot", "mk shoot", "Target"]] +
+                   [[fmt(r["seq"]), r["prev2"], r["prev1"], fmt(r["is_start"]), fmt(r["ne"]), fmt(r["boss"]),
+                     fmt(r["hist_shoot"]), fmt(r["mk_shoot"]), r["target"]] for r in ev["processed"]],
+                   [0.65, 0.75, 0.75, 0.6, 0.85, 0.55, 0.75, 0.75, 0.65],
+                   note="A missing distance is filled with the median of the training data inside the model. After a pause "
+                        "of more than 4 seconds, prev1 and prev2 go back to start. The order numbers skip some values "
+                        "because the player also had other events, such as boss attacks, between these actions.",
+                   label="B2")
 
     out = REPORTS / FILE_NAME
     for old in REPORTS.glob("*.pdf"):

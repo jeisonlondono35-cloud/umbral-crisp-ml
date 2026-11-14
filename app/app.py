@@ -64,6 +64,7 @@ def ctx() -> dict:
     exps = res.get("experiments", [])
     return {"R": res, "D": _json(PROC / "data_report.json"), "M": _json(MON / "monitoring_simulated.json"),
             "E": _json(ROOT / "docs" / "expert_review.json"), "PUB": _json(ROOT / "data" / "raw" / "ml_public.json"),
+            "EV": _json(PROC / "evidence.json"),
             "LS": _json(ROOT / "data" / "raw" / "log_stats.json"),
             "REPO": "https://github.com/jeisonlondono35-cloud/umbral-crisp-ml", "GAME": "https://juego-pixelart.onrender.com/", "card": _json(MODELS / "model_card.json"),
             "exps": exps, "PHASES": PHASES, "ACTIONS": ACTIONS, "AL": ACTION_LABEL, "WORLDS": WORLDS,

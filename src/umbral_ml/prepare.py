@@ -83,6 +83,7 @@ def clean(df: pd.DataFrame, log: list[dict]) -> pd.DataFrame:
     def step(name, why, before, after):
         log.append({"step": name, "why": why, "rows_before": int(before), "rows_after": int(after)})
 
+    df = df.assign(_ri=df.index)          # row number in the raw table (for the before/after evidence)
     n = len(df)
     df = df.drop_duplicates(["pid", "sid", "k", "t", "a", "mv"] if "mv" in df else ["pid", "sid", "k", "t"])
     step("Drop duplicated events", "A batch re-uploaded after a lost server answer repeats the same "
@@ -108,6 +109,29 @@ def clean(df: pd.DataFrame, log: list[dict]) -> pd.DataFrame:
     step("Sort chronologically per player", "Sequential features and the online models must only see the past.",
          len(df), len(df))
     return df.reset_index(drop=True)
+
+
+def evidence(raw: pd.DataFrame, df: pd.DataFrame, acts: pd.DataFrame, n: int = 6) -> dict:
+    """The SAME actions of one player shown raw (as uploaded by the game) and processed (as the models
+    see them). Picks a player with a distance = 9999 so the cleaning is visible."""
+    a = df[df.k == "a"]
+    hit = a[raw.loc[a._ri, "ne"].to_numpy() >= 9999] if "ne" in raw else a.head(0)
+    row = hit.iloc[0] if len(hit) else a.iloc[min(3, len(a) - 1)]
+    mine = a[a.pid == row.pid]
+    i = max(0, list(mine.seq).index(row.seq) - 2)
+    pick = mine.iloc[i:i + n]
+    raw_cols = ["pid", "sid", "k", "t", "a", "gap", "ne", "hp", "w", "m", "d"]
+    raw_rows = raw.loc[pick._ri, [c for c in raw_cols if c in raw]].copy()
+    raw_rows["pid"] = raw_rows.pid.str[:6] + "…"
+    raw_rows["sid"] = raw_rows.sid.str[:6] + "…"
+    proc = acts.set_index(["pid", "seq"]).loc[list(zip(pick.pid, pick.seq))].reset_index()
+    proc_cols = ["seq", "prev2", "prev1", "is_start", "ne", "hp", "w", "mode", "diff", "boss", "hist_shoot",
+                 "mk_shoot", "target"]
+    proc = proc[proc_cols].copy()
+    for c in ("hist_shoot", "mk_shoot"):
+        proc[c] = proc[c].round(3)
+    clean = lambda d: json.loads(d.to_json(orient="records"))  # noqa: E731
+    return {"raw": clean(raw_rows), "processed": clean(proc)}
 
 
 def action_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -202,6 +226,7 @@ def main(source: str = "auto") -> dict:
                 "context (world, mode, difficulty, life, enemy distance, boss fight) for the next-action task; "
                 "8 in-game situation features + attack id/family for the hit task.",
                 "rows_before": int(len(df)), "rows_after": int(len(acts) + len(hits) + len(dodges))})
+    (PROC / "evidence.json").write_text(json.dumps(evidence(raw, df, acts), indent=1), encoding="utf-8")
     raw.head(25).to_csv(PROC / "sample_raw.csv", index=False)
     acts.to_csv(PROC / "actions.csv", index=False)
     hits.to_csv(PROC / "hits.csv", index=False)

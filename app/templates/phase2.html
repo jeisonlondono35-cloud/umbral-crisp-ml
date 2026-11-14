@@ -44,6 +44,17 @@ Code: <code>src/umbral_ml/prepare.py</code>.</p>
 </ul>
 <p>Every sequential feature uses only <b>earlier</b> events of the same player.</p>
 
+<h3>Evidence: the same actions before and after</h3>
+{% if EV.raw %}
+<p>Six actions of one player exactly as the game uploaded them (left: raw) and as the models receive them (right: processed).
+Look at the distance 9999 that becomes missing, and the long pause that resets prev1/prev2 to "start".</p>
+<div class="two">
+<div class="scroll"><table><tr><th>t (ms)</th><th>action</th><th class="r">gap</th><th class="r">distance</th><th class="r">life</th></tr>
+{% for r in EV.raw %}<tr><td>{{ r.t }}</td><td>{{ r.a }}</td><td class="r">{{ r.gap|int }}</td><td class="r">{{ r.ne|int }}</td><td class="r">{{ r.hp }}</td></tr>{% endfor %}</table></div>
+<div class="scroll"><table><tr><th>prev2</th><th>prev1</th><th class="r">start</th><th class="r">distance</th><th class="r">hist_shoot</th><th>target</th></tr>
+{% for r in EV.processed %}<tr><td>{{ r.prev2 }}</td><td>{{ r.prev1 }}</td><td class="r">{{ r.is_start }}</td><td class="r">{{ r.ne|int if r.ne is not none else 'missing' }}</td><td class="r">{{ r.hist_shoot }}</td><td>{{ r.target }}</td></tr>{% endfor %}</table></div>
+</div>
+{% endif %}
 <h3>Sample: raw rows → processed rows</h3>
 <p>Files: <code>data/processed/sample_raw.csv</code> and <code>data/processed/sample_actions.csv</code> (first 25 rows of each, in the repository).</p>
 
