@@ -83,6 +83,22 @@ def num(v, d=3):
     return "-" if v is None else f"{float(v):.{d}f}"
 
 
+@app.errorhandler(Exception)
+def on_error(e):
+    """Incident logging (Phase 5): every unexpected error is printed with its traceback to the server log
+    (Render → Logs) and the API answers with the error type instead of a bare 500 page."""
+    from werkzeug.exceptions import HTTPException
+    if isinstance(e, HTTPException):
+        return e
+    import traceback
+    traceback.print_exc()
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "internal", "type": type(e).__name__, "detail": str(e)[:300]}), 500
+    return render_template("base.html", title="Error", **ctx()).replace(
+        "<main>", f"<main><p class='banner'><b>Something went wrong</b> ({type(e).__name__}: {str(e)[:200]}). "
+                  "It was logged; please report it in Phase 5.</p>", 1), 500
+
+
 @app.route("/")
 def home():
     return render_template("home.html", **ctx())
