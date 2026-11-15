@@ -286,3 +286,19 @@ def test_public_forms_carry_csrf():
     assert r.status_code == 200 and "Next action" in r.text
     r = c.post("/feedback", data={"_csrf": tok(c, "/phase/5"), "type": "opinion", "rating": "5", "text": "ok"})
     assert r.status_code == 302
+
+
+def test_pgc_documentation_is_public_on_the_homepage():
+    """Activity 3: the seven PGC sections and the access to every deliverable are readable without an account."""
+    c = client()
+    html = c.get("/").text
+    for title in ("Project Title", "Problem Statement and Justification", "General Objective", "Specific Objectives",
+                  "Reference Framework", "Methodology and Development Schedule", "Bibliographic References",
+                  "Presentation video"):
+        assert title in html, title
+    assert "Studer, S." in html and "Development schedule" in html and "Contributions of each member" in html
+    for name, text in (("user-manual", "Short training guide"), ("technical-manual", "Deployment on Render")):
+        r = c.get(f"/docs/{name}")
+        assert r.status_code == 200 and text in r.text and "<script" not in r.text.split("<article")[1], name
+    assert c.get("/docs/secret").status_code == 404
+    assert c.get("/app/").status_code == 302          # the operational modules stay protected

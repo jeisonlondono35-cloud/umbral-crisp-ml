@@ -21,6 +21,7 @@ from flask_login import current_user, login_required
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from src.umbral_ml import pgc as PGC  # noqa: E402
 from src.umbral_ml import predict as P  # noqa: E402
 from src.umbral_ml.config import (ACTIONS, ACTION_LABEL, DIFFS, FIG, HIT_X, MODES, MON, MOVES, MODELS,  # noqa: E402
                                   PROC, REPORTS, WORLDS)
@@ -50,6 +51,8 @@ def _warm_up() -> None:
 _warm_up()
 LIVE_LOG = MON / "live_predictions.jsonl"
 REPORT2 = "R3A3 Speaking Models.pdf"
+REPORT3 = "R3A4 UMBRAL Final Report.pdf"
+DOCS = {"user-manual": ("User Manual", "USER_MANUAL.md"), "technical-manual": ("Technical Manual", "TECHNICAL_MANUAL.md")}
 FEEDBACK = MON / "feedback.jsonl"
 
 PHASES = [
@@ -80,14 +83,15 @@ def ctx() -> dict:
             "exps": exps, "PHASES": PHASES, "ACTIONS": ACTIONS, "AL": ACTION_LABEL, "WORLDS": WORLDS,
             "MODES": MODES, "DIFFS": DIFFS, "MOVES": MOVES, "HIT_X": HIT_X,
             "model_files": sorted((p.name, round(p.stat().st_size / 1024, 1)) for p in MODELS.iterdir()),
-            "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists()}
+            "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists(), "P": PGC.context()}
 
 
 @app.context_processor
 def base_ctx():
     """What base.html needs on EVERY page (the system pages do not pass the CRISP-ML context)."""
     return {"PHASES": PHASES, "R": _json(REPORTS / "results.json"), "D": _json(PROC / "data_report.json"),
-            "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists(), "has_pdf2": (REPORTS / REPORT2).exists()}
+            "has_pdf": (REPORTS / "R3A2 Traces in data.pdf").exists(), "has_pdf2": (REPORTS / REPORT2).exists(),
+            "has_pdf3": (REPORTS / REPORT3).exists()}
 
 
 @app.template_filter("pct")
@@ -142,6 +146,76 @@ def report_pdf():
 @app.route("/report-activity2.pdf")
 def report2_pdf():
     return send_from_directory(REPORTS, REPORT2, download_name=REPORT2)
+
+
+@app.route("/report-final.pdf")
+def report_final_pdf():
+    return send_from_directory(REPORTS, REPORT3, download_name=REPORT3)
+
+
+def _md_html(text: str) -> str:
+    """The small Markdown of docs/system/*.md (headings, lists, tables, bold, code) as safe HTML."""
+    import re
+    from markupsafe import escape
+
+    def inline(s: str) -> str:
+        s = str(escape(s))
+        s = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
+        return re.sub(r"`(.+?)`", r"<code>\1</code>", s)
+
+    out, lst, tab = [], None, []
+
+    def close():
+        nonlocal lst, tab
+        if lst:
+            out.append(f"</{lst}>")
+            lst = None
+        if tab:
+            rows = [[c.strip() for c in r.strip().strip("|").split("|")] for r in tab if not re.match(r"^\|\s*-", r)]
+            html = "".join("<tr>" + "".join(f"<{'th' if i == 0 else 'td'}>{inline(c)}</{'th' if i == 0 else 'td'}>"
+                                            for c in r) + "</tr>" for i, r in enumerate(rows))
+            out.append(f'<div class="scroll"><table>{html}</table></div>')
+            tab = []
+
+    for ln in text.splitlines():
+        s = ln.rstrip()
+        if s.startswith("|"):
+            if lst:
+                out.append(f"</{lst}>")
+                lst = None
+            tab.append(s)
+            continue
+        if tab:
+            close()
+        m = re.match(r"^(#{1,3}) (.*)", s)
+        if m:
+            close()
+            lv = len(m.group(1))
+            out.append(f"<h{lv}>{inline(m.group(2))}</h{lv}>")
+        elif s.startswith("- ") or re.match(r"^\d+\. ", s):
+            kind = "ul" if s.startswith("- ") else "ol"
+            if lst != kind:
+                close()
+                out.append(f"<{kind}>")
+                lst = kind
+            out.append(f"<li>{inline(re.sub(r'^(- |\d+\. )', '', s))}</li>")
+        elif s:
+            close()
+            out.append(f"<p>{inline(s)}</p>")
+        else:
+            close()
+    close()
+    return "\n".join(out)
+
+
+@app.route("/docs/<name>")
+def doc_page(name: str):
+    """User documentation readable on the site (the same files as the PDF appendices and the repository)."""
+    if name not in DOCS:
+        abort(404)
+    title, fname = DOCS[name]
+    body = _md_html((ROOT / "docs" / "system" / fname).read_text(encoding="utf-8"))
+    return render_template("doc.html", title=title, body=body, docs=DOCS, current=name, **ctx())
 
 
 @app.route("/experiments.csv")

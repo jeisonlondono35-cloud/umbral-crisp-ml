@@ -1,0 +1,62 @@
+{# PGC documentation (Activity 3). Text comes from src/umbral_ml/pgc.py, the same source as the final report. #}
+<nav class="toc" aria-label="PGC sections">
+  <b>PGC documentation</b>
+  {% for key, name in P.sections %}<a href="#{{ key }}">{{ loop.index }}. {{ name }}</a>{% endfor %}
+</nav>
+
+<section id="title" class="pgc">
+  <h2>1. Project Title</h2>
+  <p class="ptitle">{{ P.title }}</p>
+  <p class="help">Team: {% for ini, name in P.team %}{{ name }} ({{ ini }}){{ ', ' if not loop.last }}{% endfor %} ·
+    Universidad de Cundinamarca · Machine Learning · Teacher: Edison Gustavo Cañón Varela · 2026</p>
+</section>
+
+<section id="problem" class="pgc">
+  <h2>2. Problem Statement and Justification</h2>
+  {% for head, paras in P.problem %}<h3>{{ head }}</h3>{% for t in paras %}<p>{{ t|safe }}</p>{% endfor %}{% endfor %}
+</section>
+
+<section id="general" class="pgc">
+  <h2>3. General Objective</h2>
+  <p class="note">{{ P.general }}</p>
+</section>
+
+<section id="specific" class="pgc">
+  <h2>4. Specific Objectives</h2>
+  <p>Each objective has an indicator that can be checked and the result that we actually obtained.</p>
+  <div class="scroll"><table>
+    <tr><th>Code</th><th>Area</th><th>Objective</th><th>Indicator</th><th>Result obtained</th><th>Status</th></tr>
+    {% for o in P.specific %}<tr><td><b>{{ o.code }}</b></td><td>{{ o.area }}</td><td>{{ o.objective }}</td>
+      <td>{{ o.indicator }}</td><td>{{ o.result }}</td>
+      <td><span class="pill {{ 'ok' if o.status == 'Met' else 'part' }}">{{ o.status }}</span></td></tr>{% endfor %}
+  </table></div>
+</section>
+
+<section id="framework" class="pgc">
+  <h2>5. Reference Framework</h2>
+  {% for head, paras in P.framework %}<h3>{{ head }}</h3>{% for t in paras %}<p>{{ t|safe }}</p>{% endfor %}{% endfor %}
+</section>
+
+<section id="method" class="pgc">
+  <h2>6. Methodology and Development Schedule</h2>
+  <p>We applied the six phases of CRISP-ML (Studer et al., 2021) in Activity 1, integrated the chosen model into the
+  information system in Activity 2, and documented and validated the complete project in Activity 3. Each phase has its
+  own page with the evidence: {% for i, name, slug in PHASES %}<a href="{{ url_for('phase', n=i) }}">Phase {{ i }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}</p>
+  {% for head, t in P.method %}<h3>{{ head }}</h3><p>{{ t|safe }}</p>{% endfor %}
+  <h3>Development schedule</h3>
+  <p>Planned dates are our plan at the start of each activity; actual dates come from the Git history of the game
+  and of this repository.</p>
+  <div class="scroll"><table>
+    <tr><th>#</th><th>Activity</th><th>Responsible</th><th>Planned</th><th>Actual</th><th>Deliverable</th></tr>
+    {% for a, who, plan, real, out in P.schedule %}<tr><td>{{ loop.index }}</td><td>{{ a }}</td><td>{{ who }}</td>
+      <td>{{ plan }}</td><td>{{ real }}</td><td>{{ out }}</td></tr>{% endfor %}
+  </table></div>
+  <h3>Contributions of each member</h3>
+  <div class="grid">{% for ini, name, t in P.contrib %}<div class="card"><h3>{{ ini }} · {{ name }}</h3>{{ t }}</div>{% endfor %}</div>
+</section>
+
+<section id="references" class="pgc">
+  <h2>7. Bibliographic References</h2>
+  <p class="help">APA 7th edition. They support the problem, the reference framework, the dataset and the methods.</p>
+  <div class="refs">{% for r in P.refs %}<p>{{ r|safe }}</p>{% endfor %}</div>
+</section>

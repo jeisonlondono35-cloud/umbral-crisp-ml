@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block body %}
+<p class="tag">User documentation</p>
+<p class="help">{% for key, (t, f) in docs.items() %}<a href="{{ url_for('doc_page', name=key) }}" class="{{ 'on' if key == current }}">{{ t }}</a>{{ ' · ' if not loop.last }}{% endfor %}
+  · source in the repository: <a href="{{ REPO }}/tree/master/docs/system">docs/system</a> · also Appendices C and D of the final report</p>
+<article class="doc">{{ body|safe }}</article>
+<div class="pager"><a href="{{ url_for('home') }}">← Project homepage and PGC documentation</a></div>
+{% endblock %}

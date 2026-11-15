@@ -1,0 +1,9 @@
+{# Access to every deliverable of the project (Activity 3). #}
+<div class="res">
+  <a class="card" href="{{ url_for('report_final_pdf') if has_pdf3 else '#deliverables' }}"><span class="ico">📄</span><b>Technical report</b><small>Final PDF of the three activities</small></a>
+  <a class="card" href="{{ url_for('phase', n=1) }}"><span class="ico">🔬</span><b>CRISP-ML evidence</b><small>Six phase pages, experiments, Activity 1 report</small></a>
+  <a class="card" href="{{ REPO }}"><span class="ico">💻</span><b>Repository</b><small>Code, training, dependencies, README</small></a>
+  <a class="card" href="{{ url_for('ops.dashboard') if current_user.is_authenticated else url_for('auth.login') }}"><span class="ico">🔐</span><b>Intelligent system</b><small>Sign in · protected modules</small></a>
+  <a class="card" href="{{ url_for('doc_page', name='user-manual') }}"><span class="ico">📘</span><b>User documentation</b><small>User manual, training guide, technical manual</small></a>
+  <a class="card" href="#video"><span class="ico">🎬</span><b>Presentation video</b><small>{{ '20 minutes, in English' if P.video else 'Coming soon' }}</small></a>
+</div>

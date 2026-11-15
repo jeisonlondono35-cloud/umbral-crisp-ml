@@ -10,6 +10,7 @@ monitoring, expert review), so the report and the app cannot disagree.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from reportlab.lib import colors
@@ -77,6 +78,22 @@ NOTE = ParagraphStyle("note", parent=P0, leading=18, spaceAfter=12)
 CEN = ParagraphStyle("cen", parent=P0, alignment=TA_CENTER)
 REF = ParagraphStyle("ref", parent=P0, leftIndent=0.5 * inch, firstLineIndent=-0.5 * inch)
 NUM = {"table": 0, "figure": 0}
+H3 = ParagraphStyle("h3", parent=P0, fontName=BOLDITAL, keepWithNext=1)                         # APA level 3
+# Used by the final report (report_final.py), which puts this report and the Activity 2 report inside one document:
+# the numbers written in the text ("Table 5", "Figures 3 and 4") move by an offset, appendix letters can be renamed
+# (A -> C) and headings go one level down. With the defaults nothing changes.
+PART = {"t_off": 0, "f_off": 0, "letters": {}, "shift": 0}
+
+
+def _retext(t: str) -> str:
+    def nums(m):
+        off = PART["t_off"] if m.group(1).startswith("Table") else PART["f_off"]
+        return m.group(1) + " " + re.sub(r"\d+", lambda d: str(int(d.group()) + off), m.group(2))
+    if PART["t_off"] or PART["f_off"]:
+        t = re.sub(r"\b(Tables?|Figures?) (\d+(?:(?:,| and| to) \d+)*)", nums, t)
+    for a, b in PART["letters"].items():
+        t = re.sub(rf"\b(Appendix|Table|Figure) {a}(?=\d|\b)", rf"\1 {b}", t)
+    return t
 
 
 def _us_date(iso: str) -> str:
@@ -94,7 +111,7 @@ def f3(v, d=3):
 
 
 def para(t):
-    return Paragraph(t, P)
+    return Paragraph(_retext(t), P)
 
 
 def seriation(items):
@@ -105,6 +122,8 @@ def seriation(items):
 def apa_table(title, rows, widths, note=None, label=None):
     """APA 7 table: bold number, italic title, black lines on every cell (asked by the team), optional note.
     `label` (e.g. "B1") is used in the appendices instead of the running number."""
+    if label and label[0] in PART["letters"]:
+        label = PART["letters"][label[0]] + label[1:]
     if not label:
         NUM["table"] += 1
     data = [[Paragraph(str(c), CELLH if i == 0 else CELL) for c in r] for i, r in enumerate(rows)]
@@ -122,6 +141,9 @@ def apa_figure(path: Path, title, width_in, crop=None, note=None, label=None):
     from PIL import Image as PI
     if not path.exists():
         return []
+    if label and label[0] in PART["letters"]:
+        label = PART["letters"][label[0]] + label[1:]
+    note = _retext(note) if note else note
     if not label:
         NUM["figure"] += 1
     im = PI.open(path)
@@ -170,15 +192,19 @@ _HN = [0]
 
 
 def h(text, level=0):
-    p = Paragraph(text, H1 if level == 0 else H2)
-    p.toc_level = level
+    level = min(level + PART["shift"], 2)
+    p = Paragraph(_retext(text), (H1, H2, H3)[level])
+    p.toc_level = level if level < 2 else None      # level 3 headings stay out of the contents (shorter list)
     _HN[0] += 1
     p.toc_key = _HN[0]
     return p
 
 
-def main() -> None:
-    NUM.update(table=0, figure=0)
+def main(part: bool = False):
+    """Write the PDF. With part=True (final report) return {"body", "appendix"} instead: no title page, contents,
+    introduction, concepts, closing sections or references, and the numbering continues from the final report."""
+    if not part:
+        NUM.update(table=0, figure=0)
     R = json.loads((REPORTS / "results.json").read_text(encoding="utf-8"))
     D = R["data"]
     M = json.loads((MON / "monitoring_simulated.json").read_text(encoding="utf-8"))
@@ -197,84 +223,87 @@ def main() -> None:
     by_player = D["split"]["group_by"] == "pid"
     s = []
 
-    # ------------------------------------------------------------------ title page (APA student paper)
-    if (IMG / "logo_udec.png").exists():
-        s += [Spacer(1, 0.2 * inch), Image(str(IMG / "logo_udec.png"), width=1.1 * inch, height=1.1 * inch * 150 / 99)]
-    s += [Spacer(1, 0.6 * inch), Paragraph(f"<b>{TITLE}</b>", CEN), Spacer(1, DOUBLE)]
-    s += [Paragraph(a, CEN) for a in AUTHORS]
-    s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
-          Spacer(1, DOUBLE),
-          Paragraph("Selected topic: technical report about how a video game learns from the way people play (CRISP-ML)", CEN),
-          Spacer(1, DOUBLE),
-          Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', CEN),
-          Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', CEN),
-          PageBreak()]
+    if not part:
+        # ------------------------------------------------------------------ title page (APA student paper)
+        if (IMG / "logo_udec.png").exists():
+            s += [Spacer(1, 0.2 * inch), Image(str(IMG / "logo_udec.png"), width=1.1 * inch, height=1.1 * inch * 150 / 99)]
+        s += [Spacer(1, 0.6 * inch), Paragraph(f"<b>{TITLE}</b>", CEN), Spacer(1, DOUBLE)]
+        s += [Paragraph(a, CEN) for a in AUTHORS]
+        s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
+              Spacer(1, DOUBLE),
+              Paragraph("Selected topic: technical report about how a video game learns from the way people play (CRISP-ML)", CEN),
+              Spacer(1, DOUBLE),
+              Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', CEN),
+              Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', CEN),
+              PageBreak()]
 
-    # ------------------------------------------------------------------ contents
-    toc = TableOfContents()
-    toc.levelStyles = [ParagraphStyle("t0", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0, textColor=BLACK),
-                       ParagraphStyle("t1", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0.35 * inch, textColor=BLACK)]
-    toc.dotsMinLevel = 0
-    s += [Paragraph("<b>Table of Contents</b>", CEN), toc, PageBreak()]
+        # ------------------------------------------------------------------ contents
+        toc = TableOfContents()
+        toc.levelStyles = [ParagraphStyle("t0", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0, textColor=BLACK),
+                           ParagraphStyle("t1", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0.35 * inch, textColor=BLACK)]
+        toc.dotsMinLevel = 0
+        s += [Paragraph("<b>Table of Contents</b>", CEN), toc, PageBreak()]
 
-    # ------------------------------------------------------------------ introduction
-    s += [Paragraph(f"<b>{TITLE}</b>", CEN),
-          h("Introduction"),
-          para("We are three students and we also make a video game together. The game is called UMBRAL. It is a pixel-art "
-               "action game made with Godot, and people can play it on the web, on Android phones and on computers. In "
-               f"the game you fight bosses, and the bosses learn from you while you fight. If you always use your shield, "
-               "the boss notices it and tries to trick you. If you always jump to the same side, the boss starts to aim there."),
-          para("To do this, the game already had three small machine learning models inside it. One model guesses your next "
-               "action, one model learns where you usually go when you dodge, and one model calculates if an attack will hit "
-               "you. We wrote them some months ago, but we never checked carefully if they really work. This project was "
-               "our chance to do it in a serious way."),
-          para("For this activity we followed CRISP-ML, a process model for machine learning projects that has six phases "
-               "(Studer et al., 2021). We recorded data from the game, cleaned it, trained and compared several models, chose "
-               "the best one with a rule that we wrote before training, put it in a Flask web application, and made a plan "
-               "to watch it over time. The name of the report, Traces in Data, comes from the idea that every player leaves "
-               "small traces while playing, and the computer can learn from them."),
-          para("Our main goals were the following:")]
-    s += seriation(["record real play data from the game without names or accounts;",
-                    "prepare the data without mixing the training data and the test data;",
-                    "compare several algorithms and choose the best one with a fixed rule;",
-                    "publish the model in a web application with a demo;",
-                    "plan how to watch the model and when to train it again."])
-    if sim:
-        s.append(para(f"We need to be honest about one thing. We started recording real data in November 2026. When we "
-                      f"wrote this report we had {ra['actions']:,} real actions from {ra['players']} players, and our minimum "
-                      f"was {ra['min_actions']:,} actions from {ra['min_players']} players. For this reason, the model results in "
-                      f"this version come from simulated players, which are computer players that follow the rules of the game. "
-                      f"We always write SIMULATED or REAL next to the numbers. The system trains again every Monday, and it "
-                      f"changes to the real data by itself when there is enough of it."))
+        # ------------------------------------------------------------------ introduction
+        s += [Paragraph(f"<b>{TITLE}</b>", CEN),
+              h("Introduction"),
+              para("We are three students and we also make a video game together. The game is called UMBRAL. It is a pixel-art "
+                   "action game made with Godot, and people can play it on the web, on Android phones and on computers. In "
+                   f"the game you fight bosses, and the bosses learn from you while you fight. If you always use your shield, "
+                   "the boss notices it and tries to trick you. If you always jump to the same side, the boss starts to aim there."),
+              para("To do this, the game already had three small machine learning models inside it. One model guesses your next "
+                   "action, one model learns where you usually go when you dodge, and one model calculates if an attack will hit "
+                   "you. We wrote them some months ago, but we never checked carefully if they really work. This project was "
+                   "our chance to do it in a serious way."),
+              para("For this activity we followed CRISP-ML, a process model for machine learning projects that has six phases "
+                   "(Studer et al., 2021). We recorded data from the game, cleaned it, trained and compared several models, chose "
+                   "the best one with a rule that we wrote before training, put it in a Flask web application, and made a plan "
+                   "to watch it over time. The name of the report, Traces in Data, comes from the idea that every player leaves "
+                   "small traces while playing, and the computer can learn from them."),
+              para("Our main goals were the following:")]
+        s += seriation(["record real play data from the game without names or accounts;",
+                        "prepare the data without mixing the training data and the test data;",
+                        "compare several algorithms and choose the best one with a fixed rule;",
+                        "publish the model in a web application with a demo;",
+                        "plan how to watch the model and when to train it again."])
+        if sim:
+            s.append(para(f"We need to be honest about one thing. We started recording real data in November 2026. When we "
+                          f"wrote this report we had {ra['actions']:,} real actions from {ra['players']} players, and our minimum "
+                          f"was {ra['min_actions']:,} actions from {ra['min_players']} players. For this reason, the model results in "
+                          f"this version come from simulated players, which are computer players that follow the rules of the game. "
+                          f"We always write SIMULATED or REAL next to the numbers. The system trains again every Monday, and it "
+                          f"changes to the real data by itself when there is enough of it."))
 
-    # ------------------------------------------------------------------ concepts
-    s += [h("Machine Learning Concepts"),
-          para("Before the phases, we want to explain some words that we use many times in this report. Table 1 shows them "
-               "with the meaning that they have in our project.")]
-    s += apa_table("Main Concepts Used in the Project", [
-        ["Concept", "Meaning in this project"],
-        ["Player action", "One thing the player does in a fight: shoot, hit, block, dodge, jump or hide."],
-        ["Trace or event", "One line of data that the game saves, for example \"the player dodged at 120 px from the boss\"."],
-        ["Feature", "An input for the model, for example the last two actions or the life of the player."],
-        ["Target", "The answer that the model must predict, for example the next action."],
-        ["Training", "The moment when the model learns from data."],
-        ["Validation and test data", "Data that the model did not see. We use it to check if the model is really good."],
-        ["Online learning", "The model learns during the game, one action at a time. The game models work like this."],
-        ["Data leakage", "A mistake where information from the test data enters the training, so the results look too good."],
-        ["Drift", "The data changes over time, for example after a game update, and the model can get worse."]],
-        [1.9, 4.6])
-    s += [para("CRISP-ML organizes the work in six phases. Each phase answers one question, and the results of one phase "
-               "are the starting point of the next one. Table 2 shows the phases and the question of each one.")]
-    s += apa_table("The Six Phases of CRISP-ML", [
-        ["Phase", "Main question"],
-        ["1. Business and data understanding", "What is the problem, and what data do we have?"],
-        ["2. Data engineering", "How do we clean and prepare the data?"],
-        ["3. Model engineering", "Which algorithms do we try, and how do we train them?"],
-        ["4. Model evaluation", "Which model is the best, and is it good enough?"],
-        ["5. Model deployment", "How can other people use the model?"],
-        ["6. Monitoring and maintenance", "How do we watch the model and update it?"]],
-        [2.8, 3.7], note="Adapted from Studer et al. (2021).")
+        # ------------------------------------------------------------------ concepts
+        s += [h("Machine Learning Concepts"),
+              para("Before the phases, we want to explain some words that we use many times in this report. Table 1 shows them "
+                   "with the meaning that they have in our project.")]
+        s += apa_table("Main Concepts Used in the Project", [
+            ["Concept", "Meaning in this project"],
+            ["Player action", "One thing the player does in a fight: shoot, hit, block, dodge, jump or hide."],
+            ["Trace or event", "One line of data that the game saves, for example \"the player dodged at 120 px from the boss\"."],
+            ["Feature", "An input for the model, for example the last two actions or the life of the player."],
+            ["Target", "The answer that the model must predict, for example the next action."],
+            ["Training", "The moment when the model learns from data."],
+            ["Validation and test data", "Data that the model did not see. We use it to check if the model is really good."],
+            ["Online learning", "The model learns during the game, one action at a time. The game models work like this."],
+            ["Data leakage", "A mistake where information from the test data enters the training, so the results look too good."],
+            ["Drift", "The data changes over time, for example after a game update, and the model can get worse."]],
+            [1.9, 4.6])
+        s += [para("CRISP-ML organizes the work in six phases. Each phase answers one question, and the results of one phase "
+                   "are the starting point of the next one. Table 2 shows the phases and the question of each one.")]
+        s += apa_table("The Six Phases of CRISP-ML", [
+            ["Phase", "Main question"],
+            ["1. Business and data understanding", "What is the problem, and what data do we have?"],
+            ["2. Data engineering", "How do we clean and prepare the data?"],
+            ["3. Model engineering", "Which algorithms do we try, and how do we train them?"],
+            ["4. Model evaluation", "Which model is the best, and is it good enough?"],
+            ["5. Model deployment", "How can other people use the model?"],
+            ["6. Monitoring and maintenance", "How do we watch the model and update it?"]],
+            [2.8, 3.7], note="Adapted from Studer et al. (2021).")
 
+
+    i_body = len(s)
     # ------------------------------------------------------------------ phase 1
     s += [h("Phase 1: Business and Data Understanding"),
           h("The Problem and the People", 1),
@@ -647,6 +676,7 @@ def main() -> None:
                "table and its functions in Supabase.")]
 
     # ------------------------------------------------------------------ discussion / conclusion
+    i_close = len(s)
     s += [h("Discussion"),
           para(f"The first lesson for us is that the game model was already good. With new players it got "
                f"{pct(A['test'][IG]['accuracy'])}, while the simplest guess got {pct(maj)}, and with real players it is right "
@@ -687,6 +717,9 @@ def main() -> None:
         s.append(Paragraph(ref, REF))
 
     # ------------------------------------------------------------------ appendices (APA: after the references)
+    i_app = len(s)
+    if part:
+        PART["shift"] = 0
     intro = (f"These screenshots come from the published application ({APP_URL}). Each phase has its own page, and "
              "the menu at the top lets the user move between them.")
     if sim:
@@ -731,10 +764,9 @@ def main() -> None:
                         "because the player also had other events, such as boss attacks, between these actions.",
                    label="B2")
 
+    if part:
+        return {"body": s[i_body:i_close], "appendix": s[i_app:]}
     out = REPORTS / FILE_NAME
-    for old in REPORTS.glob("*.pdf"):
-        if old.name != FILE_NAME:
-            old.unlink()
     Doc(str(out), title="R3A2 Traces in data", author=", ".join(AUTHORS)).multiBuild(s)
     print("PDF ->", out)
 

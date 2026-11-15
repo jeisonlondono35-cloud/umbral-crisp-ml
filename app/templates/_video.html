@@ -1,0 +1,11 @@
+{# The presentation video (Activity 3); the link is VIDEO_URL in src/umbral_ml/pgc.py. #}
+<section id="video" class="pgc">
+  <h2>Presentation video</h2>
+  {% if P.video %}
+    {% set yt = P.video.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/') %}
+    {% if 'youtube' in yt %}<div class="video"><iframe src="{{ yt }}" title="UMBRAL final presentation" allowfullscreen></iframe></div>{% endif %}
+    <p><a href="{{ P.video }}">Open the video</a> (20 minutes, in English, the three members of the team).</p>
+  {% else %}
+    <p class="note">The 20-minute presentation in English will be published here.</p>
+  {% endif %}
+</section>

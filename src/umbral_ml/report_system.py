@@ -158,8 +158,11 @@ def accounts() -> list[list[str]]:
     return rows
 
 
-def main() -> None:
-    R0.NUM.update(table=0, figure=0)
+def main(part: bool = False):
+    """Write the PDF. With part=True (final report) return {"body", "appendix"}: no title page, contents,
+    introduction, concepts, closing sections or references; the numbering continues from the final report."""
+    if not part:
+        R0.NUM.update(table=0, figure=0)
     T = run_tests()
     S = snapshot()
     V = review()
@@ -172,62 +175,65 @@ def main() -> None:
     s: list = []
     code = lambda t: f"<font face='Courier'>{t}</font>"  # noqa: E731
 
-    # ---------------------------------------------------------------- title page
-    if (IMG / "logo_udec.png").exists():
-        from reportlab.platypus import Image  # noqa: PLC0415
-        s += [Spacer(1, 0.2 * inch), Image(str(IMG / "logo_udec.png"), width=1.1 * inch, height=1.1 * inch * 150 / 99)]
-    s += [Spacer(1, 0.6 * inch), Paragraph(f"<b>{TITLE}</b>", CEN), Spacer(1, DOUBLE)]
-    s += [Paragraph(a, CEN) for a in AUTHORS]
-    s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
-          Spacer(1, DOUBLE),
-          Paragraph("Selected topic: a web information system that manages the players and accounts of a video game "
-                    "and uses its machine learning model inside the decisions (CRISP-ML)", CEN),
-          Spacer(1, DOUBLE),
-          Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', CEN),
-          Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', CEN), PageBreak()]
-    toc = TableOfContents()
-    toc.levelStyles = [ParagraphStyle("t0", fontName=REG, fontSize=SIZE, leading=20, textColor=BLACK),
-                       ParagraphStyle("t1", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0.35 * inch,
-                                      textColor=BLACK)]
-    toc.dotsMinLevel = 0
-    s += [Paragraph("<b>Table of Contents</b>", CEN), toc, PageBreak()]
+    if not part:
+        # ---------------------------------------------------------------- title page
+        if (IMG / "logo_udec.png").exists():
+            from reportlab.platypus import Image  # noqa: PLC0415
+            s += [Spacer(1, 0.2 * inch), Image(str(IMG / "logo_udec.png"), width=1.1 * inch, height=1.1 * inch * 150 / 99)]
+        s += [Spacer(1, 0.6 * inch), Paragraph(f"<b>{TITLE}</b>", CEN), Spacer(1, DOUBLE)]
+        s += [Paragraph(a, CEN) for a in AUTHORS]
+        s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
+              Spacer(1, DOUBLE),
+              Paragraph("Selected topic: a web information system that manages the players and accounts of a video game "
+                        "and uses its machine learning model inside the decisions (CRISP-ML)", CEN),
+              Spacer(1, DOUBLE),
+              Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', CEN),
+              Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', CEN), PageBreak()]
+        toc = TableOfContents()
+        toc.levelStyles = [ParagraphStyle("t0", fontName=REG, fontSize=SIZE, leading=20, textColor=BLACK),
+                           ParagraphStyle("t1", fontName=REG, fontSize=SIZE, leading=20, leftIndent=0.35 * inch,
+                                          textColor=BLACK)]
+        toc.dotsMinLevel = 0
+        s += [Paragraph("<b>Table of Contents</b>", CEN), toc, PageBreak()]
 
-    # ---------------------------------------------------------------- introduction
-    s += [Paragraph(f"<b>{TITLE}</b>", CEN), h("Introduction"),
-          para("In Activity 1 we studied the machine learning of our game, UMBRAL, with CRISP-ML. We compared 22 "
-               f"experiments and chose a gradient boosting model that guesses the next action of a player ({at:.1%} "
-               "accuracy with test players), and a logistic regression that gives the probability that a boss attack "
-               "hits the player. We published them in a Flask application with a demo."),
-          para("A demo is not a system. Nobody decides anything with a demo form. In this activity the model starts to "
-               "speak inside a real process, and this is why we call the report Speaking Models. We built a complete web "
-               "information system that manages the players and accounts of the game: player profiles, saved games, "
-               "play sessions, records and support tickets. The model is one step of the process: when a play session "
-               "arrives, an analyst runs the model, the model proposes a change of difficulty for that player, a person "
-               "approves or rejects it, the account changes, and the next session tells us if the change worked."),
-          para("We follow the same six phases of CRISP-ML as in Activity 1, now seen from the side of the system. We "
-               "extended the same Flask application and the same repository, so the documentation of Activity 1 is still "
-               "the home page, and every prediction can be traced to the evaluated model and its version.")]
+        # ---------------------------------------------------------------- introduction
+        s += [Paragraph(f"<b>{TITLE}</b>", CEN), h("Introduction"),
+              para("In Activity 1 we studied the machine learning of our game, UMBRAL, with CRISP-ML. We compared 22 "
+                   f"experiments and chose a gradient boosting model that guesses the next action of a player ({at:.1%} "
+                   "accuracy with test players), and a logistic regression that gives the probability that a boss attack "
+                   "hits the player. We published them in a Flask application with a demo."),
+              para("A demo is not a system. Nobody decides anything with a demo form. In this activity the model starts to "
+                   "speak inside a real process, and this is why we call the report Speaking Models. We built a complete web "
+                   "information system that manages the players and accounts of the game: player profiles, saved games, "
+                   "play sessions, records and support tickets. The model is one step of the process: when a play session "
+                   "arrives, an analyst runs the model, the model proposes a change of difficulty for that player, a person "
+                   "approves or rejects it, the account changes, and the next session tells us if the change worked."),
+              para("We follow the same six phases of CRISP-ML as in Activity 1, now seen from the side of the system. We "
+                   "extended the same Flask application and the same repository, so the documentation of Activity 1 is still "
+                   "the home page, and every prediction can be traced to the evaluated model and its version.")]
 
-    s += [h("Information System Concepts"),
-          para("Before the phases, we want to explain some words that we use many times in this report. Table 1 shows "
-               "them with the meaning that they have in our project.")]
-    s += apa_table("Main Concepts Used in the System", [
-        ["Concept", "Meaning in this project"],
-        ["Information system", "The web application that stores the data of the players and supports the decisions of "
-                               "the team."],
-        ["Business process", "A sequence of steps with people and rules, for example \"upload a play session → analyze "
-                             "it → decide the difficulty\"."],
-        ["CRUD", "Create, read, update and delete: the four basic operations on the data."],
-        ["Authentication", "Checking who the user is (user name and password)."],
-        ["Authorization and role", "Checking what the user can do. Each user has one role: player, analyst or "
-                                   "administrator."],
-        ["Password hash", "A one-way code of the password. The system stores the hash, never the password."],
-        ["Inference", "One use of the trained model with new data, for example the analysis of one play session."],
-        ["Model version", "The data source and training date of the model. Every inference keeps it."],
-        ["Human in the loop", "The model proposes, but a person approves or rejects the decision."],
-        ["Drift", "The input data changes over time, and the model can get worse. We measure it with the PSI."]],
-        [1.9, 4.6])
+        s += [h("Information System Concepts"),
+              para("Before the phases, we want to explain some words that we use many times in this report. Table 1 shows "
+                   "them with the meaning that they have in our project.")]
+        s += apa_table("Main Concepts Used in the System", [
+            ["Concept", "Meaning in this project"],
+            ["Information system", "The web application that stores the data of the players and supports the decisions of "
+                                   "the team."],
+            ["Business process", "A sequence of steps with people and rules, for example \"upload a play session → analyze "
+                                 "it → decide the difficulty\"."],
+            ["CRUD", "Create, read, update and delete: the four basic operations on the data."],
+            ["Authentication", "Checking who the user is (user name and password)."],
+            ["Authorization and role", "Checking what the user can do. Each user has one role: player, analyst or "
+                                       "administrator."],
+            ["Password hash", "A one-way code of the password. The system stores the hash, never the password."],
+            ["Inference", "One use of the trained model with new data, for example the analysis of one play session."],
+            ["Model version", "The data source and training date of the model. Every inference keeps it."],
+            ["Human in the loop", "The model proposes, but a person approves or rejects the decision."],
+            ["Drift", "The input data changes over time, and the model can get worse. We measure it with the PSI."]],
+            [1.9, 4.6])
 
+
+    i_body = len(s)
     # ---------------------------------------------------------------- phase 1
     s += [h("Phase 1: Business and Process Understanding"), h("The Problem and the People", 1),
           para("Our domain expert said in Activity 1 that the bosses could feel unfair for some players. The game "
@@ -493,7 +499,7 @@ def main() -> None:
     # ---------------------------------------------------------------- phase 6
     s += [h("Phase 6: Monitoring and Maintenance"), h("What We Watch", 1),
           para("Figure 6 shows the monitoring page. It uses the same indicators and alarm lines as Phase 6 of "
-               f"Activity 1, and Table {R0.NUM['table'] + 1} shows them.")]
+               f"Activity 1, and Table {R0.NUM['table'] + 1 - R0.PART['t_off']} shows them.")]
     s += apa_figure(IMG / "sys_monitoring.jpg", "Monitoring of the Model", 6.3)
     s += apa_table("Indicators of the Monitoring Page", [
         ["Indicator", "Source", "Alarm"],
@@ -541,6 +547,7 @@ def main() -> None:
                "repository: they are environment variables in Render.")]
 
     # ---------------------------------------------------------------- discussion / conclusion / future
+    i_close = len(s)
     s += [h("Discussion"),
           para("The first lesson is that a model inside a system needs the same inputs as in training. The model was "
                "not wrong; the system was giving it less history. A simple comparison row by row found the difference, "
@@ -577,9 +584,14 @@ def main() -> None:
                 "Towards CRISP-ML(Q): A machine learning process model with quality assurance methodology. <i>Machine "
                 "Learning and Knowledge Extraction, 3</i>(2), 392–413. https://doi.org/10.3390/make3020020"]:
         s.append(Paragraph(ref, R0.REF))
+    i_app = len(s)
+    if part:
+        R0.PART["shift"] = 0
     s += [PageBreak(), h("Appendix A: Technical Manual")] + appendix(DOCS / "TECHNICAL_MANUAL.md", "A")
     s += [PageBreak(), h("Appendix B: User Manual")] + appendix(DOCS / "USER_MANUAL.md", "B")
 
+    if part:
+        return {"body": s[i_body:i_close], "appendix": s[i_app:], "tests": T, "snap": S, "review": V}
     out = Path(os.environ["REPORT_OUT"]) if os.environ.get("REPORT_OUT") else REPORTS / FILE_NAME
     Doc(str(out), title=TITLE, author=", ".join(AUTHORS)).multiBuild(s)
     print("report written:", out, "| tests:", T["summary"], "| accounts:", len(ACC))

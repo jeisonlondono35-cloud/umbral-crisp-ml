@@ -62,6 +62,19 @@ button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10
 .bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
 footer{max-width:1180px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:12.5px}
 ul.tight li{margin:3px 0}
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:18px 0;font-size:13.5px}
+.toc a{color:var(--accent);text-decoration:none}.toc a:hover{text-decoration:underline}
+section.pgc{scroll-margin-top:12px;max-width:980px}section.pgc p{line-height:1.6}
+.ptitle{font-size:20px;font-weight:700;margin:6px 0}
+.pill{display:inline-block;padding:1px 8px;border-radius:9px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.ok{background:#e3f4ea;color:var(--good)}.pill.part{background:var(--warn-soft);color:var(--warn)}
+.refs p{padding-left:2em;text-indent:-2em;margin:6px 0;font-size:14px;overflow-wrap:anywhere}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0}
+.res a{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:3px}.res a:hover{border-color:var(--accent)}
+.res .ico{font-size:20px}.res small{color:var(--ink2);font-size:12.5px}
+.video{position:relative;padding-top:56.25%;max-width:860px}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:10px}
+.doc{max-width:900px}.doc h1{font-size:26px}.doc p,.doc li{line-height:1.6}
+.help a.on{font-weight:700}
 .sys{background:#1f1e27;border-top:1px solid #2a2933}
 .sys .top{padding:6px 16px}
 .sys nav{margin-left:0}
@@ -95,8 +108,10 @@ ul.tight li{margin:3px 0}
   <a class="logo" href="{{ url_for('home') }}">UMBRAL<small>CRISP-ML · the game's machine learning</small></a>
   <nav>
     {% for i, name, slug in PHASES %}<a href="{{ url_for('phase', n=i) }}" class="{{ 'on' if n == i }}" title="{{ name }}"><span class="n">{{ i }}</span>{{ slug|capitalize }}</a>{% endfor %}
+    <a href="{{ url_for('home') }}#title" title="PGC documentation">PGC</a>
     <a href="{{ url_for('demo') }}" class="{{ 'on' if title == 'Live demo' }}">▶ Demo</a>
-    {% if has_pdf %}<a href="{{ url_for('report_pdf') }}">PDF</a>{% endif %}
+    <a href="{{ url_for('doc_page', name='user-manual') }}" class="{{ 'on' if request.path.startswith('/docs') }}">Docs</a>
+    {% if has_pdf3 %}<a href="{{ url_for('report_final_pdf') }}">Report</a>{% elif has_pdf %}<a href="{{ url_for('report_pdf') }}">PDF</a>{% endif %}
     {% if current_user.is_authenticated %}<a href="{{ url_for('ops.dashboard') }}" class="{{ 'on' if request.path.startswith('/app') }}">◆ System</a>
     {% else %}<a href="{{ url_for('auth.login') }}">Sign in</a><a href="{{ url_for('auth.register') }}">Create account</a>{% endif %}
   </nav>
