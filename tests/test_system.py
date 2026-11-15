@@ -275,3 +275,14 @@ def test_errors_are_logged():
     from app.system.models import ErrorLog
     with app.app_context():
         assert ErrorLog.query.filter_by(error_type="RuntimeError").count() == 1
+
+
+def test_public_forms_carry_csrf():
+    """The Activity 1 demo and the Phase 5 opinion form are public POST forms: they must work (regression)."""
+    c = client()
+    t = tok(c, "/demo")
+    r = c.post("/demo", data={"_csrf": t, "history": "shoot, shoot, dodge", "w": "3", "mode": "ole", "diff": "1",
+                              "hp": "4", "ne": "160", "boss": "on", "move": "special", "close": "on"})
+    assert r.status_code == 200 and "Next action" in r.text
+    r = c.post("/feedback", data={"_csrf": tok(c, "/phase/5"), "type": "opinion", "rating": "5", "text": "ok"})
+    assert r.status_code == 302

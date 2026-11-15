@@ -79,7 +79,7 @@ gunicorn app.app:app                                    # production (Render: se
 
 <h3 id="feedback">Send an opinion or report an incident</h3>
 {% if request.args.get('sent') %}<p class="note">Thanks — your message was recorded.</p>{% endif %}
-<form method="post" action="{{ url_for('feedback') }}" class="card" style="max-width:560px">
+<form method="post" action="{{ url_for('feedback') }}" class="card" style="max-width:560px"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
   <label>Type</label><select name="type"><option value="opinion">Opinion</option><option value="incident">Incident</option></select>
   <label>Rating (1 = bad, 5 = great)</label><select name="rating">{% for i in range(1, 6) %}<option>{{ i }}</option>{% endfor %}</select>
   <label>Message</label><textarea name="text" rows="3" maxlength="2000"></textarea>

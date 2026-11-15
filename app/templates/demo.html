@@ -5,7 +5,7 @@
 <p class="lead">Describe what a player has just done and the situation. The saved models answer what the player will do
 next and whether a boss attack would hit. Every request is logged for monitoring (<a href="{{ url_for('live') }}">/monitoring/live</a>).</p>
 {% if err %}<p class="banner"><b>Input error:</b> {{ err }}</p>{% endif %}
-<form method="post" class="two">
+<form method="post" class="two"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
   <div class="card">
     <h3>The player</h3>
     <label>Recent actions, oldest first (comma separated: {{ ACTIONS|join(', ') }})</label>
