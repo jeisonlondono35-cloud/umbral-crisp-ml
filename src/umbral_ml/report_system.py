@@ -57,7 +57,16 @@ def run_tests() -> dict:
 
 
 def snapshot() -> dict:
-    """Numbers of the running system (players, sessions, decisions, monitoring)."""
+    """Numbers of the running system (players, sessions, decisions, monitoring).
+
+    reports/system_snapshot.json holds the numbers read from the DEPLOYED system (its pages and monitoring.json,
+    as administrator); it wins over the local database, so the report shows the real system, not demo data."""
+    live = REPORTS / "system_snapshot.json"
+    if live.exists():
+        d = json.loads(live.read_text(encoding="utf-8"))
+        d["users"], d["recs"], d["rec_actions"] = Counter(d["users"]), Counter(d["recs"]), Counter(d["rec_actions"])
+        d["live"] = True
+        return d
     sys.path.insert(0, str(ROOT))
     from app.app import app  # noqa: PLC0415
     from app.system.models import (Inference, PlaySession, Player, Recommendation, Ticket,  # noqa: PLC0415
@@ -312,10 +321,11 @@ def main() -> None:
           h("The Data That Feeds the Model", 1),
           para("The model needs the actions of the session in order and the context of the fight (world, difficulty, "
                "hearts). It also needs the history of the player: the earlier sessions of the same player, taken from the "
-               "database (Phase 3 explains why). To show the system working we created demo data from the Activity 1 "
-               "test players, the players that the model never saw in training. Their sessions keep their real order, "
-               "and they are marked as SIMULATED, like in Activity 1, because the real play log does not have enough "
-               "data yet.")]
+               "database (Phase 3 explains why). The published system has only the data of its first users: the team "
+               "and the test accounts. To measure the model with many sessions we also used a local copy of the system "
+               "filled with the Activity 1 test players, the players that the model never saw in training "
+               f"({code('flask seed-demo')}). That copy is only for tests; the numbers of this report about the system "
+               "come from the published system.")]
 
     # ---------------------------------------------------------------- phase 3
     s += [h("Phase 3: Model Engineering"), h("Where Machine Learning Contributes", 1),
@@ -335,7 +345,8 @@ def main() -> None:
                f"inside the system, against {at:.0%} in Activity 1. We compared the features row by row and found the "
                "reason: in training, the features hist_ and mk_ describe the whole past of the player, not only the "
                "current session. We changed the service so that it gives the earlier sessions of the player as history "
-               f"(at most 1,000 actions), like in training. With the same sessions the accuracy went to {HISTORY_ACC:.1%}. "
+               f"(at most 1,000 actions), like in training. With the same sessions, on the local copy, the accuracy went to "
+               f"{HISTORY_ACC:.1%}. "
                "The small difference that is left comes from data that the system does not store for each action, like "
                "the time between actions."),
           h("The Decision Rule", 1),
@@ -368,34 +379,45 @@ def main() -> None:
                        "errors stored in the error log."],
     ], [1.6, 4.9])
     rc, ra = S["recs"], S["rec_actions"]
+    where = (f"the published system, read on {S['captured_at'][:10]} from its pages as administrator" if S.get("live")
+             else "a local copy with demo data")
     s += [h("The Model Inside the System", 1),
-          para(f"Table 8 shows the state of the system when we wrote this report ("
-               + ("a local copy with SQLite" if S["db"].startswith("sqlite") else "PostgreSQL database")
-               + ", demo data from the Activity 1 test players).")]
+          para(f"Table 8 shows the state of the system when we wrote this report ({where}).")]
     s += apa_table("Snapshot of the System", [
         ["Indicator", "Value"],
         ["Users by role", ", ".join(f"{k}: {v}" for k, v in sorted(S["users"].items()))],
         ["Players / sessions / analyzed", f"{S['players']} / {S['sessions']} / {S['analyzed']}"],
-        ["Next-action accuracy against real actions", f"{S['acc']:.1%} of {S['checked']:,} predictions (baseline "
-                                                      f"{S['base']:.1%})" if S["acc"] is not None else "-"],
+        ["Next-action accuracy against real actions", f"{S['acc']:.1%} ({round(S['acc'] * S['checked'])} of "
+                                                      f"{S['checked']:,} predictions; baseline {S['base']:.1%})"
+                                                      if S["acc"] is not None else "-"],
         ["Mean hit risk of analyzed sessions", f"{S['risk']:.1%}" if S["risk"] is not None else "-"],
         ["Recommendations (lower / raise)", f"{ra.get('lower', 0)} / {ra.get('raise', 0)}; pending {rc.get('pending', 0)}, "
                                             f"applied {rc.get('applied', 0)}, rejected {rc.get('rejected', 0)}"],
         ["Inferences, mean / p95 time", f"{S['inferences']}, {S['mean_ms'] or 0:.0f} ms / {S['p95_ms'] or 0:.0f} ms "
                                         "(one call analyzes a whole session)"],
-        ["Data drift (PSI, 30 days)", f"{S['psi']:.3f} ({S['psi_state']})" if S["psi"] is not None else "-"],
+        ["Data drift (PSI, 30 days)", f"{S['psi']:.3f} ({S['psi_state']})" if S["psi"] is not None
+                                      else "not computed yet (it needs 200 actions in 30 days)"],
         ["Errors logged", str(S["errors"])],
     ], [2.6, 3.9])
-    s += [para("The accuracy of the demo data is lower than in Activity 1 because many demo players have only one or two "
-               "earlier sessions, and the model needs the history of the player. This agrees with Activity 1, where "
-               "accuracy grows with the number of actions already seen.")]
+    if S.get("live"):
+        s += [para(f"The published system is new, so it has few data: {S['players']} players and {S['sessions']} play "
+                   "session, uploaded by the operational review with the player test account and analyzed by the analyst "
+                   f"account. In that session the model guessed {S['acc']:.1%} of the next actions, above the baseline of "
+                   f"{S['base']:.1%} and close to the {at:.1%} of Activity 1, but 39 predictions are too few to say more. "
+                   "The rule proposed to lower the difficulty, and the decision is waiting for a person. The PSI needs "
+                   "more actions, so the system says that it is not computed yet instead of showing a number without "
+                   "meaning.")]
+    else:
+        s += [para("The accuracy of the demo data is lower than in Activity 1 because many demo players have only one or "
+                   "two earlier sessions, and the model needs the history of the player.")]
     p95 = vm.get("p95") or S["p95_ms"] or 0
     crit = [
         ("S1", deployed and all(c["ok"] for c in V["checks"] if "Permission" in c["check"]),
          "Permission matrix of 40 requests on the public URL without errors." if deployed else "Not run on the public URL yet."),
         ("S2", deployed and V["passed"] == V["total"],
          f"Operational review on the public URL: {V['passed']} of {V['total']} checks." if deployed else "Not run yet."),
-        ("S3", at - HISTORY_ACC <= 0.02, f"{HISTORY_ACC:.1%} inside the system against {at:.1%} in Activity 1."),
+        ("S3", at - HISTORY_ACC <= 0.02, f"{HISTORY_ACC:.1%} inside the system (local copy with the Activity 1 test "
+                                         f"sessions) against {at:.1%} in Activity 1."),
         ("S4", p95 < 1000, f"95th percentile {p95:.0f} ms."),
         ("S5", True, "Table inferences: date, user, player, session, model, version, input, result, latency."),
         ("S6", bool(T.get("ok")), T["summary"]),
@@ -429,13 +451,13 @@ def main() -> None:
         ["Delete analyzed sessions and players; users and roles", "no", "no", "yes"],
     ], [3.5, 1.0, 1.0, 1.0])
     s += [h("What the User Sees", 1),
-          para("Figure 3 shows the analyst dashboard, which is the work queue of process P2: sessions waiting for the "
-               "model and recommendations waiting for a decision. Figure 4 shows the result of the model in a session, "
+          para("Figures 3 to 6 are screenshots of the published system. Figure 3 shows the dashboard, which is the "
+               "work queue of process P2: sessions waiting for the model and recommendations waiting for a decision. Figure 4 shows the result of the model in a session, "
                "and Figure 5 the decision. Each number has a short explanation and its limits: the models were trained "
                "with simulated players, with fewer than 30 actions the numbers change a lot, and they describe habits, "
                "not skill or reasons. The Reports page gives indicators by difficulty and by world and exports the "
                "sessions as CSV.")]
-    s += apa_figure(IMG / "sys_dashboard.jpg", "Dashboard of an Analyst", 6.3)
+    s += apa_figure(IMG / "sys_dashboard.jpg", "Dashboard of the Published System", 6.3)
     s += apa_figure(IMG / "sys_session_model.jpg", "Result of the Model in a Play Session", 6.3)
     s += apa_figure(IMG / "sys_decision.jpg", "Decision Supported by the Model", 6.3)
     s += [h("Publication and Operational Review", 1),
