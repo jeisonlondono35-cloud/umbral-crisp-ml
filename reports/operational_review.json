@@ -1,0 +1,85 @@
+{
+ "url": "https://umbral-crisp-ml.onrender.com",
+ "started_at": "2026-11-15T00:53:59+00:00",
+ "checks": [
+  {
+   "check": "Health endpoint and database",
+   "ok": true,
+   "detail": "database=ok, model=SIMULATED 2026-11-14T21:34:55, 625 ms"
+  },
+  {
+   "check": "Sign-in as player",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Sign-in as analyst",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Sign-in as admin",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Permission matrix (40 requests)",
+   "ok": true,
+   "detail": "every role sees only its functions"
+  },
+  {
+   "check": "API refuses anonymous inference",
+   "ok": true,
+   "detail": "status 401"
+  },
+  {
+   "check": "Player uploads a session",
+   "ok": true,
+   "detail": "https://umbral-crisp-ml.onrender.com/app/sessions/1"
+  },
+  {
+   "check": "Analyst runs the model on the session",
+   "ok": true,
+   "detail": "round trip 1032 ms"
+  },
+  {
+   "check": "Model result shown with real-vs-predicted comparison",
+   "ok": true,
+   "detail": "20/39 right"
+  },
+  {
+   "check": "Inference history stores user, model version and latency",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Decision step available (recommendation or keep)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Data persists after signing out and in",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Monitoring answers (inferences, latency, drift, errors)",
+   "ok": true,
+   "detail": "2 inferences, mean 133 ms, PSI None, 0 errors"
+  }
+ ],
+ "model_version": "SIMULATED 2026-11-14T21:34:55",
+ "monitoring": {
+  "n": 2,
+  "mean": 132.97,
+  "p95": 198.71,
+  "psi": null,
+  "psi_state": "no data",
+  "n_errors": 0,
+  "version": "SIMULATED 2026-11-14T21:34:55"
+ },
+ "finished_at": "2026-11-15T00:54:21+00:00",
+ "passed": 13,
+ "total": 13,
+ "environment": "DEPLOYED"
+}
