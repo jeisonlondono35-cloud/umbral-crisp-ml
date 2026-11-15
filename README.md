@@ -10,7 +10,7 @@ CRISP-ML in a Flask application.
 | Technical report (PDF) **R3A2 Traces in data** | [`reports/R3A2 Traces in data.pdf`](<reports/R3A2 Traces in data.pdf>) (also `/report.pdf` in the app) |
 | This repository | code, training scripts, dependencies, saved models + preprocessing, results |
 | **Activity 2** · information system (accounts, roles, players, sessions, model in the workflow) | same app, under `/app` (sign in) |
-| Activity 2 report (PDF, manuals as appendices) | [`reports/R3 Activity 2 From traces to decisions.pdf`](<reports/R3 Activity 2 From traces to decisions.pdf>) (also `/report-activity2.pdf`) |
+| Activity 2 report R3A3 Speaking Models (PDF, manuals as appendices) | [`reports/R3A3 Speaking Models.pdf`](<reports/R3A3 Speaking Models.pdf>) (also `/report-activity2.pdf`) |
 | Technical manual · User manual and training guide | [`docs/system/TECHNICAL_MANUAL.md`](docs/system/TECHNICAL_MANUAL.md) · [`docs/system/USER_MANUAL.md`](docs/system/USER_MANUAL.md) |
 
 ## Activity 2 · the information system

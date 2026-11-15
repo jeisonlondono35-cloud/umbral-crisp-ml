@@ -49,7 +49,7 @@ def _warm_up() -> None:
 
 _warm_up()
 LIVE_LOG = MON / "live_predictions.jsonl"
-REPORT2 = "R3 Activity 2 From traces to decisions.pdf"
+REPORT2 = "R3A3 Speaking Models.pdf"
 FEEDBACK = MON / "feedback.jsonl"
 
 PHASES = [

@@ -1,6 +1,11 @@
-"""Activity 2 technical report (PDF), same APA 7 format as the Activity 1 report (report.py).
+"""Activity 2 technical report "R3A3 Speaking Models" (PDF): same APA 7 format and the same structure as the
+Activity 1 report (report.py): introduction, concepts, the six CRISP-ML phases, debugging notes, Git workflow,
+discussion, conclusion, future work and references, plus the two manuals as appendices.
 
     python -m src.umbral_ml.report_system            (uses the local database or DATABASE_URL for the numbers)
+
+Optional: REPORT_ACCOUNTS="user:Role:password;..." adds the teacher test accounts (never commit that PDF), and
+REPORT_OUT=<path> writes the PDF somewhere else.
 
 Every number comes from the system itself (database snapshot), the automatic tests, the operational review
 evidence (reports/operational_review.json for the deployed system, *_local.json for a local run) and the
@@ -10,6 +15,7 @@ repository, the app and the PDF say the same thing.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -26,8 +32,9 @@ from .config import REPORTS, ROOT
 from .report import (AUTHORS, CEN, COURSE, DATE, DOUBLE, INSTITUTION, LIST, REG, SIZE, TEACHER, Doc, apa_figure,
                      apa_table, h, para, seriation)
 
-TITLE = "From Traces to Decisions: The UMBRAL Player Information System"
-FILE_NAME = "R3 Activity 2 From traces to decisions.pdf"
+TITLE = "Speaking Models: How the Model of UMBRAL Takes Part in the Decisions of an Information System"
+FILE_NAME = "R3A3 Speaking Models.pdf"
+HISTORY_ACC = 0.538   # next-action accuracy inside the system on the Activity 1 test sessions, with history (measured)
 APP_URL = R0.APP_URL
 REPO_URL = R0.REPO_URL
 IMG = ROOT / "docs" / "img"
@@ -130,14 +137,31 @@ def appendix(md_path: Path, letter: str) -> list:
 
 
 # ------------------------------------------------------------------------------------- report
+# ------------------------------------------------------------------------------------- report
+def accounts() -> list[list[str]]:
+    """Test accounts for the teacher, only from the environment (never written in the repository):
+    REPORT_ACCOUNTS="user:Role:password;user2:Role:password". Without it the report says they are sent privately."""
+    rows = []
+    for item in os.environ.get("REPORT_ACCOUNTS", "").split(";"):
+        parts = item.split(":", 2)
+        if len(parts) == 3 and all(p.strip() for p in parts):
+            rows.append([p.strip() for p in parts])
+    return rows
+
+
 def main() -> None:
     R0.NUM.update(table=0, figure=0)
     T = run_tests()
     S = snapshot()
     V = review()
+    ACC = accounts()
     A1 = json.loads((REPORTS / "results.json").read_text(encoding="utf-8"))
     at = A1["A"]["test"][A1["A"]["chosen"]]["accuracy"]
+    deployed = bool(V and V.get("environment") == "DEPLOYED")
+    vm = (V or {}).get("monitoring") or {}
+    n_tests = T.get("passed", 0) + (T.get("failed") or 0)
     s: list = []
+    code = lambda t: f"<font face='Courier'>{t}</font>"  # noqa: E731
 
     # ---------------------------------------------------------------- title page
     if (IMG / "logo_udec.png").exists():
@@ -147,8 +171,8 @@ def main() -> None:
     s += [Paragraph(a, CEN) for a in AUTHORS]
     s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
           Spacer(1, DOUBLE),
-          Paragraph("Activity 2: a web information system that manages the players and accounts of UMBRAL and uses "
-                    "the model of Activity 1 inside its processes", CEN),
+          Paragraph("Selected topic: a web information system that manages the players and accounts of a video game "
+                    "and uses its machine learning model inside the decisions (CRISP-ML)", CEN),
           Spacer(1, DOUBLE),
           Paragraph(f'<link href="{REPO_URL}"><u>GitHub Repository</u></link>', CEN),
           Paragraph(f'<link href="{APP_URL}"><u>Render Deployment URL</u></link>', CEN), PageBreak()]
@@ -165,22 +189,60 @@ def main() -> None:
                f"experiments and chose a gradient boosting model that guesses the next action of a player ({at:.1%} "
                "accuracy with test players), and a logistic regression that gives the probability that a boss attack "
                "hits the player. We published them in a Flask application with a demo."),
-          para("A demo is not a system. Nobody decides anything with a demo form. In this activity we built a "
-               "complete web information system around the model. It manages the players and accounts of the game: "
-               "player profiles, saved games, play sessions, records and support tickets. The model is not a separate "
-               "page. It is one step of the process: when a play session arrives, an analyst runs the model, the model "
-               "proposes a change of difficulty for that player, a person approves or rejects it, the account changes, "
-               "and the next session tells us if the change worked."),
-          para("We extended the same Flask application and the same repository, so the methodological documentation "
-               "of Activity 1 is still the home page, and every prediction can be traced to the evaluated model and "
-               "its version.")]
+          para("A demo is not a system. Nobody decides anything with a demo form. In this activity the model starts to "
+               "speak inside a real process, and this is why we call the report Speaking Models. We built a complete web "
+               "information system that manages the players and accounts of the game: player profiles, saved games, "
+               "play sessions, records and support tickets. The model is one step of the process: when a play session "
+               "arrives, an analyst runs the model, the model proposes a change of difficulty for that player, a person "
+               "approves or rejects it, the account changes, and the next session tells us if the change worked."),
+          para("We follow the same six phases of CRISP-ML as in Activity 1, now seen from the side of the system. We "
+               "extended the same Flask application and the same repository, so the documentation of Activity 1 is still "
+               "the home page, and every prediction can be traced to the evaluated model and its version.")]
 
-    # ---------------------------------------------------------------- 1. design
-    s += [h("System Design"), h("Users", 1),
+    s += [h("Information System Concepts"),
+          para("Before the phases, we want to explain some words that we use many times in this report. Table 1 shows "
+               "them with the meaning that they have in our project.")]
+    s += apa_table("Main Concepts Used in the System", [
+        ["Concept", "Meaning in this project"],
+        ["Information system", "The web application that stores the data of the players and supports the decisions of "
+                               "the team."],
+        ["Business process", "A sequence of steps with people and rules, for example \"upload a play session → analyze "
+                             "it → decide the difficulty\"."],
+        ["CRUD", "Create, read, update and delete: the four basic operations on the data."],
+        ["Authentication", "Checking who the user is (user name and password)."],
+        ["Authorization and role", "Checking what the user can do. Each user has one role: player, analyst or "
+                                   "administrator."],
+        ["Password hash", "A one-way code of the password. The system stores the hash, never the password."],
+        ["Inference", "One use of the trained model with new data, for example the analysis of one play session."],
+        ["Model version", "The data source and training date of the model. Every inference keeps it."],
+        ["Human in the loop", "The model proposes, but a person approves or rejects the decision."],
+        ["Drift", "The input data changes over time, and the model can get worse. We measure it with the PSI."]],
+        [1.9, 4.6])
+
+    # ---------------------------------------------------------------- phase 1
+    s += [h("Phase 1: Business and Process Understanding"), h("The Problem and the People", 1),
+          para("Our domain expert said in Activity 1 that the bosses could feel unfair for some players. The game "
+               "already knows how each player fights, but this knowledge was only inside the bosses: nobody in the team "
+               "could see it, compare players or decide anything with it. The team also had the data of the players in "
+               "many places: the game, the Supabase database of the accounts and some spreadsheets."),
           para("Three kinds of people use the system. Players are the people who play UMBRAL; they register by "
                "themselves. Analysts are members of the team who review sessions with the model and make the "
                "decisions. Administrators manage users and roles. In our team J.A is the administrator and the owner "
-               "of the model, and J.P and J.Q are analysts. Table 1 shows the business processes.")]
+               "of the model, and J.P and J.Q are analysts."),
+          h("Business Goals and System Goals", 1)]
+    s += apa_table("Business Goals, System Goals and the Role of the Model", [
+        ["Business goal", "System goal", "Role of the model"],
+        ["Keep the data of players and accounts in one place.", "Persistent database with CRUD for each process.", "-"],
+        ["Fights that feel fair for each player.", "A difficulty decision for each analyzed play session.",
+         "Predictability and hit risk of the player."],
+        ["Trust in the decisions.", "Every decision is approved by a person and can be traced.",
+         "Each inference stores the model version."],
+        ["Know if the model still works.", "Monitoring of errors, times, accuracy and drift.",
+         "Predictions compared with the real next actions."]],
+        [2.2, 2.3, 2.0])
+    s += [h("Business Processes", 1),
+          para("We chose the processes of players and accounts. Table 3 shows them. Process P2 is the one that uses the "
+               "model.")]
     s += apa_table("Business Processes Managed by the System", [
         ["Process", "Steps", "Who"],
         ["P1 Player accounts", "Register or create a profile → edit → add, edit and delete saved games → suspend",
@@ -192,8 +254,7 @@ def main() -> None:
         ["P5 Management", "Reports and indicators, model monitoring, users and roles", "Analyst, admin"],
     ], [1.6, 3.4, 1.5])
     s += [h("Functional Requirements and Business Rules", 1),
-          para("Table 2 lists the main functional requirements, and Table 3 the business rules that the server "
-               "checks. The main rules have automatic tests (Table 6).")]
+          para("Table 4 lists the main functional requirements, and Table 5 the business rules that the server checks.")]
     s += apa_table("Main Functional Requirements", [
         ["Code", "Requirement"],
         ["FR1", "Register, sign in and sign out; passwords stored with a secure hash."],
@@ -221,94 +282,78 @@ def main() -> None:
         ["A suspended player cannot upload sessions; a record counts only when verified.", "views.session_new, records"],
         ["Ticket status follows open → in progress → resolved → closed; resolving needs a resolution.", "views.ticket"],
     ], [4.6, 1.9])
+    s += [h("Success Criteria", 1),
+          para("We wrote the rules in Table 6 before building the system. In this way we could not change them after we "
+               "saw the results.")]
+    s += apa_table("Success Criteria Defined Before Building the System", [
+        ["Code", "Criterion"],
+        ["S1", "Every role sees only its functions: the permission matrix of the deployed system has no error."],
+        ["S2", "The whole process P2 works on the public URL: upload, model, decision, difficulty and history."],
+        ["S3", "Inside the system, the model keeps its Activity 1 accuracy on the same test sessions (at most 2 points less)."],
+        ["S4", "One analysis of a session answers in less than 1 second (95th percentile)."],
+        ["S5", "Every inference is stored with date, user, result, model version and response time."],
+        ["S6", "All the automatic tests pass."]],
+        [0.8, 5.7])
 
-    s += [h("Modules and Architecture", 1),
-          para("The system has eight modules: public documentation (Activity 1), authentication, players and saved "
-               "games, play sessions, recommendations, records, support, and management (reports, monitoring, users). "
-               "Figure 1 shows the architecture. The Flask application runs on Render with gunicorn. The data is in "
-               "PostgreSQL on Supabase, the same provider that the game already uses for its accounts, in separate "
-               "tables. The models are the files saved in Activity 1, loaded with joblib.")]
-    s += apa_figure(IMG / "sys_architecture.png", "Architecture of the System", 6.5)
-    s += [h("Database Model", 1),
-          para("Figure 2 shows the database model. The two blue tables connect the business process with the model: "
-               "every inference and every recommendation points to the session and the user. We used SQLAlchemy, so "
-               "the same code works with SQLite for the tests and PostgreSQL in production.")]
+    # ---------------------------------------------------------------- phase 2
+    s += [h("Phase 2: Data Engineering"), h("Database Model", 1),
+          para("Figure 1 shows the database model. It has ten tables. The two blue tables connect the business process "
+               "with the model: every inference and every recommendation points to the session and the user. We used "
+               "SQLAlchemy, so the same code works with SQLite for the tests and with PostgreSQL in production. The tables "
+               "are in the same Supabase project as the accounts of the game, but they are separate, so nothing of the "
+               "game changes.")]
     s += apa_figure(IMG / "sys_er.png", "Database Model", 6.5)
-    s += [h("Where Machine Learning Contributes", 1),
+    s += [h("Quality of the Data That Enters", 1),
+          para("In Activity 1 most of the work was cleaning data that already existed. In a system the best cleaning is "
+               "to stop bad data at the door. Every form is checked on the server with the rules of Table 5: the actions "
+               "of a session must be among the six actions of the game, the dates cannot be in the future, the numbers "
+               "must be in their limits, and the slots and gamer tags must be unique. A wrong form is not saved, and the "
+               "user sees the reason."),
+          h("The Data That Feeds the Model", 1),
+          para("The model needs the actions of the session in order and the context of the fight (world, difficulty, "
+               "hearts). It also needs the history of the player: the earlier sessions of the same player, taken from the "
+               "database (Phase 3 explains why). To show the system working we created demo data from the Activity 1 "
+               "test players, the players that the model never saw in training. Their sessions keep their real order, "
+               "and they are marked as SIMULATED, like in Activity 1, because the real play log does not have enough "
+               "data yet.")]
+
+    # ---------------------------------------------------------------- phase 3
+    s += [h("Phase 3: Model Engineering"), h("Where Machine Learning Contributes", 1),
           para("The model supports one decision of process P2: which difficulty is fair for each player. The "
                "next-action model tells how well the bosses can read the player (predictability), and the hit model "
-               "tells how often boss attacks hit the player in their usual situation (risk). With these numbers and "
-               "the real deaths and result of the session, a fixed rule proposes to lower, raise or keep the "
-               "difficulty. A person always makes the final decision. This follows the worry of our domain expert in "
-               "Activity 1: that the bosses could feel unfair for some players.")]
-
-    # ---------------------------------------------------------------- 2. auth and roles
-    s += [h("Registration, Authentication and Roles"),
-          para("Passwords are stored with scrypt and a random salt (Werkzeug), never in plain text. Public registration "
-               "creates only players: the form has no role field and a role sent by hand is ignored. Five wrong "
-               "passwords lock an account for five minutes. Every form has a CSRF token, the cookie is HttpOnly and "
-               "SameSite, and the session id changes after sign-in. Authorization is checked on the server, for each "
-               "route and for each object, and forbidden attempts are written to an audit log. Table 5 shows the "
-               "permissions.")]
-    s += apa_table("Permissions by Role", [
-        ["Function", "Player", "Analyst", "Admin"],
-        ["Public documentation (home page)", "yes", "yes", "yes"],
-        ["Own profile, saves, sessions, records, tickets", "own only", "all", "all"],
-        ["Create, edit and suspend player profiles", "no", "yes", "yes"],
-        ["Run the model; approve or reject recommendations", "no", "yes", "yes"],
-        ["Verify records; manage tickets; reports; monitoring", "no", "yes", "yes"],
-        ["Delete analyzed sessions and players; users and roles", "no", "no", "yes"],
-    ], [3.5, 1.0, 1.0, 1.0])
-
-    # ---------------------------------------------------------------- 3. processes
-    s += [h("Business Process Management"),
-          para("All the data is in a persistent PostgreSQL database. Each process has the create, read, update and "
-               "delete operations that it needs, with validation on the server and the rules of Table 3. Figure 3 "
-               "shows the analyst dashboard, which is the work queue of process P2: sessions waiting for the model "
-               "and recommendations waiting for a decision. The Reports page gives indicators by difficulty and by "
-               "world (sessions, deaths per 10 minutes, win rate, model accuracy), the recommendations that worked, "
-               "tickets and the mean opinion score, and exports the sessions as CSV.")]
-    s += apa_figure(IMG / "sys_dashboard.jpg", "Dashboard of an Analyst", 6.3)
-
-    # ---------------------------------------------------------------- 4. ML integration
-    s += [h("Machine Learning Integration"), h("The Same Model and the Same Features", 1),
-          para(f"The system uses the files chosen in Activity 1 (<font face='Courier'>models/next_action.joblib</font> "
-               f"and <font face='Courier'>models/hit.joblib</font>), version <b>{S['version']}</b>. It does not train "
-               "anything. The features are created by the same functions that we used to evaluate the models "
-               "(<font face='Courier'>predict.action_row</font> and <font face='Courier'>hit_row</font>), and the "
-               "preprocessing is inside each saved pipeline. Inference runs on the server, inside the session page and "
-               "through the JSON API, and the input data is taken from the records of the system (the stored session "
-               "and the earlier sessions of the same player).")]
-    s += [h("A Problem We Found: the History of the Player", 1),
+               "tells how often boss attacks hit the player in their usual situation (risk). With these numbers and the "
+               "real deaths and result of the session, a fixed rule proposes to lower, raise or keep the difficulty. A "
+               "person always makes the final decision."),
+          h("The Same Model and the Same Features", 1),
+          para(f"The system uses the files chosen in Activity 1 ({code('models/next_action.joblib')} and "
+               f"{code('models/hit.joblib')}), version <b>{S['version']}</b>. It does not train anything. The features are "
+               f"created by the same functions that we used to evaluate the models ({code('predict.action_row')} and "
+               f"{code('hit_row')}), and the preprocessing is inside each saved pipeline. Inference runs on the server, "
+               "inside the session page and through the JSON API."),
+          h("A Problem We Found: the History of the Player", 1),
           para("In the first version, the model guessed only about 50% of the actions of the Activity 1 test players "
-               "inside the system, against 55% in Activity 1. We compared the features row by row and found the reason: "
-               "in training, the features hist_ and mk_ describe the whole past of the player, not only the current "
-               "session. We changed the service so that it gives the earlier sessions of the player as history, like "
-               "in training. With the same sessions the accuracy went back to 54%. The small difference that is left "
-               "comes from data that the system does not store for each action, like the time between actions.")]
-    s += [h("What the User Sees", 1),
-          para("Figure 4 shows the result of the model in a session, and Figure 5 the decision. Each number has a "
-               "short explanation and its limits: the models were trained with simulated players, with fewer than "
-               "30 actions the numbers change a lot, and they describe habits, not skill or reasons.")]
-    s += apa_figure(IMG / "sys_session_model.jpg", "Result of the Model in a Play Session", 6.3)
-    s += apa_figure(IMG / "sys_decision.jpg", "Decision Supported by the Model", 6.3)
-    s += [h("The Decision Rule", 1),
-          para("We fixed the rule before using it. The risk limits are the quartiles of the hit model's own "
-               "predictions for the guardian attacks of the Activity 1 test players, so a high risk means the top "
-               "quarter.")]
+               f"inside the system, against {at:.0%} in Activity 1. We compared the features row by row and found the "
+               "reason: in training, the features hist_ and mk_ describe the whole past of the player, not only the "
+               "current session. We changed the service so that it gives the earlier sessions of the player as history "
+               f"(at most 1,000 actions), like in training. With the same sessions the accuracy went to {HISTORY_ACC:.1%}. "
+               "The small difference that is left comes from data that the system does not store for each action, like "
+               "the time between actions."),
+          h("The Decision Rule", 1),
+          para("We fixed the rule before using it. The risk limits are the quartiles of the hit model's own predictions "
+               "for the guardian attacks of the Activity 1 test players, so a high risk means the top quarter. In the "
+               "first version we used round numbers and almost every recommendation was \"lower\"; with the quartiles "
+               "the three answers appear.")]
     s += seriation(["Lower one level when the player lost or died 3 or more times per 10 minutes and the risk is 36% or "
                     "more, or when they died 5 or more times per 10 minutes.",
                     "Raise one level when the player won with at most 1.5 deaths per 10 minutes and a risk of 22% or less.",
                     "Keep the difficulty in any other case."])
-    s += [para("Every inference is stored with its date, user, player, session, model name, model version, input, "
-               "result and response time. An approved recommendation changes the player's difficulty, and the next "
-               "analyzed session of that player is compared with the session before the change.")]
+    s += [para("An approved recommendation changes the player's difficulty, and the next analyzed session of that player "
+               "is compared with the session before the change, so we know if the decision worked.")]
 
-    # ---------------------------------------------------------------- 5. testing
-    s += [h("Testing"),
-          para(f"We wrote {T.get('passed', 0) + (T.get('failed') or 0)} automatic tests with pytest "
-               f"(<font face='Courier'>tests/test_system.py</font>). The last run: <b>{T['summary']}</b>. They also run on "
-               "GitHub Actions after every push. Table 6 groups them.")]
+    # ---------------------------------------------------------------- phase 4
+    s += [h("Phase 4: Evaluation"), h("Automatic Tests", 1),
+          para(f"We wrote {n_tests} automatic tests with pytest ({code('tests/test_system.py')}). The last run: "
+               f"<b>{T['summary']}</b>. They also run on GitHub Actions after every push. Table 7 groups them.")]
     s += apa_table("Automatic Tests", [
         ["Group", "What is checked"],
         ["Security", "Protected routes redirect to sign in; API answers 401; password hash; no self-promotion to admin; "
@@ -322,50 +367,11 @@ def main() -> None:
         ["Monitoring", "Monitoring JSON, reports, CSV, health with database, API inference stored with the user, "
                        "errors stored in the error log."],
     ], [1.6, 4.9])
-
-    # ---------------------------------------------------------------- 6. deployment
-    s += [h("Deployment"),
-          para(f"The system is published at {APP_URL} (Render, free plan, gunicorn) with the database in Supabase "
-               "PostgreSQL. The configuration uses environment variables only; the repository has an example file "
-               "without secrets (.env.example) and the Render blueprint (render.yaml). The test accounts of each role "
-               "are given to the teacher privately.")]
-    if V and V.get("environment") == "DEPLOYED":
-        rows = [["Check", "Result", "Detail"]] + [[c["check"], "Pass" if c["ok"] else "Fail", c["detail"]] for c in V["checks"]]
-        s += [para(f"After the deployment we ran the operational review on {V['url']} "
-                   f"({V['started_at'][:16].replace('T', ' ')} UTC): {V['passed']} of {V['total']} checks passed "
-                   "(Table 7). It checks the database, sign-in, the 40 requests of the permission matrix, the "
-                   "whole workflow with the model, and persistence after signing out and in again.")]
-        s += apa_table("Operational Review of the Deployed System", rows, [2.6, 0.7, 3.2])
-    elif V:
-        s += [para(f"Before the deployment we ran the operational review on a local copy ({V['url']}): "
-                   f"{V['passed']} of {V['total']} checks passed. The same command is run on the public URL after "
-                   "each deployment (Technical Manual, section 10), and its evidence replaces this paragraph.")]
-
-    # ---------------------------------------------------------------- 7. monitoring
-    s += [h("Monitoring and Maintenance"),
-          para("Figure 6 shows the monitoring page. It uses the same indicators and alarm lines as Phase 6 of "
-               "Activity 1.")]
-    s += apa_figure(IMG / "sys_monitoring.jpg", "Monitoring of the Model", 6.3)
-    s += seriation(["Errors are stored in the database with path, type, message and traceback, and printed in the "
-                    "Render log.",
-                    "Inference requests and response times are stored for every call (mean and 95th percentile).",
-                    "Predictions are compared with real outcomes at once: in every analyzed session each prediction of "
-                    "the next action is checked against the real next action. Accuracy is shown per week, with an alarm "
-                    "5 points below the first three weeks. Difficulty changes are checked with the next session.",
-                    "Changes in the input data are measured with the PSI between the training data and the last 30 "
-                    "days (warning 0.1, alarm 0.2).",
-                    "Versioning: the version is the data source plus the training date in model_card.json; models are "
-                    "versioned in Git and every inference keeps its version. Retraining is weekly with GitHub Actions, "
-                    "and a new model replaces the old one only if it passes the rule of Activity 1. We also retrain when "
-                    "the PSI is above 0.2, accuracy falls 5 points, a game update changes the fights or the real data "
-                    "doubles."])
-
-    # ---------------------------------------------------------------- results
     rc, ra = S["recs"], S["rec_actions"]
-    s += [h("Results"),
-          para(f"Table 8 shows the state of the system when we wrote this report ({S['db']} database). The sessions are "
-               "demo data built from the Activity 1 test players (SIMULATED), because the real play log does not have "
-               "enough data yet.")]
+    s += [h("The Model Inside the System", 1),
+          para(f"Table 8 shows the state of the system when we wrote this report ("
+               + ("a local copy with SQLite" if S["db"].startswith("sqlite") else "PostgreSQL database")
+               + ", demo data from the Activity 1 test players).")]
     s += apa_table("Snapshot of the System", [
         ["Indicator", "Value"],
         ["Users by role", ", ".join(f"{k}: {v}" for k, v in sorted(S["users"].items()))],
@@ -380,18 +386,162 @@ def main() -> None:
         ["Data drift (PSI, 30 days)", f"{S['psi']:.3f} ({S['psi_state']})" if S["psi"] is not None else "-"],
         ["Errors logged", str(S["errors"])],
     ], [2.6, 3.9])
-    s += [para("The accuracy inside the system is lower than in Activity 1 because many demo players have only one or "
-               "two earlier sessions, and the model needs the history of the player. This agrees with Figure 6 of "
-               "Activity 1, where accuracy grows with the number of actions already seen.")]
+    s += [para("The accuracy of the demo data is lower than in Activity 1 because many demo players have only one or two "
+               "earlier sessions, and the model needs the history of the player. This agrees with Activity 1, where "
+               "accuracy grows with the number of actions already seen.")]
+    p95 = vm.get("p95") or S["p95_ms"] or 0
+    crit = [
+        ("S1", deployed and all(c["ok"] for c in V["checks"] if "Permission" in c["check"]),
+         "Permission matrix of 40 requests on the public URL without errors." if deployed else "Not run on the public URL yet."),
+        ("S2", deployed and V["passed"] == V["total"],
+         f"Operational review on the public URL: {V['passed']} of {V['total']} checks." if deployed else "Not run yet."),
+        ("S3", at - HISTORY_ACC <= 0.02, f"{HISTORY_ACC:.1%} inside the system against {at:.1%} in Activity 1."),
+        ("S4", p95 < 1000, f"95th percentile {p95:.0f} ms."),
+        ("S5", True, "Table inferences: date, user, player, session, model, version, input, result, latency."),
+        ("S6", bool(T.get("ok")), T["summary"]),
+    ]
+    s += [h("Check of the Success Criteria", 1)]
+    s += apa_table("Check of the Success Criteria", [["Code", "Result", "Met"]] +
+                   [[c, r, "Yes" if ok else "No"] for c, ok, r in crit], [0.8, 4.6, 1.1])
+    s.append(para("All the success criteria were met." if all(ok for _, ok, _ in crit)
+                  else "Some criteria are not met yet; the table shows which ones."))
 
-    # ---------------------------------------------------------------- conclusion
-    s += [h("Conclusion"),
-          para("The model of Activity 1 is now part of a real process. A session arrives, the model reads the player, "
-               "a fixed rule proposes a fair difficulty, a person decides, the account changes, and the next session "
-               "says if it worked. Everything is stored and can be traced to the model version. The most useful lesson "
-               "was the history problem: the system must give the model the same inputs as in training, and a simple "
-               "comparison row by row found the difference. Next, we want real players, to measure if the difficulty "
-               "changes really make the fights feel fair, and to let the game upload the sessions by itself.")]
+    # ---------------------------------------------------------------- phase 5
+    s += [h("Phase 5: Deployment"), h("Modules and Architecture", 1),
+          para("The system has eight modules: public documentation (Activity 1), authentication, players and saved "
+               "games, play sessions, recommendations, records, support, and management (reports, monitoring, users). "
+               "Figure 2 shows the architecture. The Flask application runs on Render with gunicorn. The data is in "
+               "PostgreSQL on Supabase. The models are the files saved in Activity 1, loaded with joblib.")]
+    s += apa_figure(IMG / "sys_architecture.png", "Architecture of the System", 6.5)
+    s += [h("Registration, Authentication and Roles", 1),
+          para("Passwords are stored with scrypt and a random salt (Werkzeug), never in plain text. Public registration "
+               "creates only players: the form has no role field and a role sent by hand is ignored. Five wrong passwords "
+               "lock an account for five minutes. Every form has a CSRF token, the cookie is HttpOnly and SameSite, and "
+               "the session id changes after sign-in. Authorization is checked on the server, for each route and for "
+               "each object, and forbidden attempts are written to an audit log. Table 10 shows the permissions.")]
+    s += apa_table("Permissions by Role", [
+        ["Function", "Player", "Analyst", "Admin"],
+        ["Public documentation (home page)", "yes", "yes", "yes"],
+        ["Own profile, saves, sessions, records, tickets", "own only", "all", "all"],
+        ["Create, edit and suspend player profiles", "no", "yes", "yes"],
+        ["Run the model; approve or reject recommendations", "no", "yes", "yes"],
+        ["Verify records; manage tickets; reports; monitoring", "no", "yes", "yes"],
+        ["Delete analyzed sessions and players; users and roles", "no", "no", "yes"],
+    ], [3.5, 1.0, 1.0, 1.0])
+    s += [h("What the User Sees", 1),
+          para("Figure 3 shows the analyst dashboard, which is the work queue of process P2: sessions waiting for the "
+               "model and recommendations waiting for a decision. Figure 4 shows the result of the model in a session, "
+               "and Figure 5 the decision. Each number has a short explanation and its limits: the models were trained "
+               "with simulated players, with fewer than 30 actions the numbers change a lot, and they describe habits, "
+               "not skill or reasons. The Reports page gives indicators by difficulty and by world and exports the "
+               "sessions as CSV.")]
+    s += apa_figure(IMG / "sys_dashboard.jpg", "Dashboard of an Analyst", 6.3)
+    s += apa_figure(IMG / "sys_session_model.jpg", "Result of the Model in a Play Session", 6.3)
+    s += apa_figure(IMG / "sys_decision.jpg", "Decision Supported by the Model", 6.3)
+    s += [h("Publication and Operational Review", 1),
+          para(f"The system is published at {APP_URL} (Render, free plan, gunicorn) with the database in Supabase "
+               "PostgreSQL. The configuration uses environment variables only; the repository has an example file "
+               "without secrets (.env.example) and the Render blueprint (render.yaml). Every push to master publishes "
+               "a new version.")]
+    if deployed:
+        rows = [["Check", "Result", "Detail"]] + [[c["check"], "Pass" if c["ok"] else "Fail", c["detail"]] for c in V["checks"]]
+        s += [para(f"After the deployment we ran the operational review on {V['url']} "
+                   f"({V['started_at'][:16].replace('T', ' ')} UTC) with one account of each role: {V['passed']} of "
+                   f"{V['total']} checks passed (Table 11). It checks the database, sign-in, the 40 requests of the "
+                   "permission matrix, the whole workflow with the model, and persistence after signing out and in "
+                   "again.")]
+        s += apa_table("Operational Review of the Deployed System", rows, [2.6, 0.7, 3.2])
+    elif V:
+        s += [para(f"Before the deployment we ran the operational review on a local copy ({V['url']}): "
+                   f"{V['passed']} of {V['total']} checks passed.")]
+    s += [h("Test Accounts", 1)]
+    if ACC:
+        s += [para(f"These are the accounts for the teacher on {APP_URL}. The analyst can run the model and decide; "
+                   "the player can upload sessions and see the result in their profile.")]
+        s += apa_table("Test Accounts for the Teacher", [["Role", "User name", "Password"]] +
+                       [[r, code(u), code(p)] for u, r, p in ACC], [1.6, 2.2, 2.7])
+    else:
+        s += [para("The test accounts of each role are given to the teacher privately.")]
+    s += [h("Manuals and Training", 1),
+          para("Appendix A is the technical manual (installation, configuration, database, deployment, security, "
+               "monitoring and maintenance) and Appendix B is the user manual for each role, with a 20-minute training "
+               "guide and the procedure to report incidents and give feedback. The same files are in the repository "
+               f"({code('docs/system')}).")]
+
+    # ---------------------------------------------------------------- phase 6
+    s += [h("Phase 6: Monitoring and Maintenance"), h("What We Watch", 1),
+          para("Figure 6 shows the monitoring page. It uses the same indicators and alarm lines as Phase 6 of "
+               f"Activity 1, and Table {R0.NUM['table'] + 1} shows them.")]
+    s += apa_figure(IMG / "sys_monitoring.jpg", "Monitoring of the Model", 6.3)
+    s += apa_table("Indicators of the Monitoring Page", [
+        ["Indicator", "Source", "Alarm"],
+        ["Errors", "Table error_log (path, type, message, traceback) and the Render log", "Any new error"],
+        ["Inference requests and response time", "Table inferences (latency of each call)", "p95 above 1 s"],
+        ["Accuracy against real actions", "Each prediction compared with the real next action", "A week 5 points below "
+                                                                                                 "the first three weeks"],
+        ["Changes in the input data", "PSI between training data and the last 30 days", "Warning 0.1, alarm 0.2"],
+        ["Decisions", "Recommendations and the result in the next session", "Many rejected or not effective"]],
+        [2.0, 2.9, 1.6])
+    s += [h("Versioning and Retraining", 1),
+          para("The version of a model is its data source plus its training date in model_card.json. Models are "
+               "versioned in Git and every inference keeps its version. Retraining is weekly with GitHub Actions, and a "
+               "new model replaces the old one only if it passes the rule of Activity 1. We also retrain when the PSI is "
+               "above 0.2, accuracy falls 5 points, a game update changes the fights or the real data doubles. To go back "
+               "to an old version we revert the retraining commit."),
+          h("Incidents and Feedback", 1),
+          para("Any signed-in user can open a ticket (problem, unfair model result or opinion with a score from 1 to 5). "
+               "Tickets follow open → in progress → resolved → closed, with high severity answered the same day. The "
+               "tickets about unfair results are read together with the rejected recommendations in the weekly review: "
+               "J.A reviews the model, J.Q the tickets and opinions, and J.P checks the game after each release.")]
+
+    # ---------------------------------------------------------------- debugging
+    s += [h("Debugging Notes"),
+          para("Like in Activity 1, some of the most important lessons came from bugs. We want to describe two of them."),
+          h("The Database Was Unreachable From Render", 1),
+          para("The first deployment failed before the application started. The log said Network is unreachable for an "
+               "address with many colons, an IPv6 address. We had copied the direct connection string of Supabase, which "
+               "uses IPv6, and the free plan of Render only has IPv4. The solution was the Session pooler string of "
+               "Supabase, which works with IPv4. Now the health page of the system says which database it uses, so this "
+               "problem is easy to see."),
+          h("The Demo Said That the Form Expired", 1),
+          para("After we added the protection against CSRF, the old demo of Activity 1 answered Bad Request: the form "
+               "expired. The new protection checks every form of the application, but the two public forms of Activity 1 "
+               "(the demo and the opinion form) did not send the token. We added the token to both forms and a test that "
+               "sends them, so the same mistake cannot come back.")]
+
+    # ---------------------------------------------------------------- git
+    s += [h("Git and GitHub Workflow"),
+          para(f"We worked in the same repository as Activity 1 ({REPO_URL}) and on the master branch. We change the "
+               "code on the computer, run the tests, make a commit and push it to master. Each push runs the tests on "
+               "GitHub Actions and makes Render publish the new version; every Monday another job trains the models "
+               "again. The main commits were the information system with the model inside the workflow, the fix of the "
+               "public forms, and the operational review of the deployed system. No password or key is in the "
+               "repository: they are environment variables in Render.")]
+
+    # ---------------------------------------------------------------- discussion / conclusion / future
+    s += [h("Discussion"),
+          para("The first lesson is that a model inside a system needs the same inputs as in training. The model was "
+               "not wrong; the system was giving it less history. A simple comparison row by row found the difference, "
+               "and now a test checks it."),
+          para("The second lesson is about decisions. A probability alone does not change anything. The rule turns the "
+               "numbers into lower, raise or keep, and the person who approves it is responsible for the change. Because "
+               "every inference and decision keeps the model version, we can always answer why the difficulty of a "
+               "player changed."),
+          para("The last lesson is about security. Most of the work of the system was not the model but the accounts, "
+               "the roles and the rules, and the protection we added broke an old form. Testing all the pages, the old "
+               "ones too, was as important as testing the new ones."),
+          h("Conclusion"),
+          para(f"The model of Activity 1 is now part of a real process. A session arrives, the model reads the player, a "
+               "fixed rule proposes a fair difficulty, a person decides, the account changes, and the next session says "
+               f"if it worked. The system has accounts with three roles, {n_tests} automatic tests, a persistent database "
+               "and a monitoring page, and it is published on Render with Supabase"
+               + (f". The operational review of the public system passed {V['passed']} of {V['total']} checks." if deployed
+                  else ".")),
+          h("Future Work", 1)]
+    s += seriation(["Let the game upload the play sessions by itself, so the analysts work with real players.",
+                    "Measure with real players if the difficulty changes make the fights feel fair.",
+                    "Add a page to change the password and recover an account.",
+                    "Retrain the models with the real sessions stored by the system when there are enough of them."])
 
     # ---------------------------------------------------------------- references + appendices
     s += [PageBreak(), Paragraph("<b>References</b>", CEN)]
@@ -408,9 +558,9 @@ def main() -> None:
     s += [PageBreak(), h("Appendix A: Technical Manual")] + appendix(DOCS / "TECHNICAL_MANUAL.md", "A")
     s += [PageBreak(), h("Appendix B: User Manual")] + appendix(DOCS / "USER_MANUAL.md", "B")
 
-    out = REPORTS / FILE_NAME
+    out = Path(os.environ["REPORT_OUT"]) if os.environ.get("REPORT_OUT") else REPORTS / FILE_NAME
     Doc(str(out), title=TITLE, author=", ".join(AUTHORS)).multiBuild(s)
-    print("report written:", out, "| tests:", T["summary"])
+    print("report written:", out, "| tests:", T["summary"], "| accounts:", len(ACC))
 
 
 if __name__ == "__main__":
