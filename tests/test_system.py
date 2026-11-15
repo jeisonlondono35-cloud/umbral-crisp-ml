@@ -293,10 +293,10 @@ def test_pgc_documentation_is_public_on_the_homepage():
     c = client()
     html = c.get("/").text
     for title in ("Project Title", "Problem Statement and Justification", "General Objective", "Specific Objectives",
-                  "Reference Framework", "Methodology and Development Schedule", "Bibliographic References",
+                  "Reference Framework", "Methodology", "Bibliographic References",
                   "Presentation video"):
         assert title in html, title
-    assert "Studer, S." in html and "Development schedule" in html and "Contributions of each member" in html
+    assert "Studer, S." in html and "Development schedule" not in html and "Contributions of each member" in html
     for name, text in (("user-manual", "Short training guide"), ("technical-manual", "Deployment on Render")):
         r = c.get(f"/docs/{name}")
         assert r.status_code == 200 and text in r.text and "<script" not in r.text.split("<article")[1], name

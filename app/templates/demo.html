@@ -4,6 +4,75 @@
 <h1>Ask the boss</h1>
 <p class="lead">Describe what a player has just done and the situation. The saved models answer what the player will do
 next and whether a boss attack would hit. Every request is logged for monitoring (<a href="{{ url_for('live') }}">/monitoring/live</a>).</p>
+<section class="arena" id="arena">
+  <div>
+    <h2 style="margin-top:0;border:0;padding-top:0">🎯 Play against the model</h2>
+    <p>Choose your actions as if you were fighting. Before each click the boss guesses what you will do next, using the
+    <b>same saved model</b> as this page and the API. Try to be unpredictable!</p>
+    <div class="acts">
+      <button class="act" data-a="shoot">🏹 Shoot<kbd>1</kbd></button><button class="act" data-a="melee">🗡 Hit<kbd>2</kbd></button>
+      <button class="act" data-a="block">🛡 Block<kbd>3</kbd></button><button class="act" data-a="dodge">💨 Dodge<kbd>4</kbd></button>
+      <button class="act" data-a="jump">⤒ Jump<kbd>5</kbd></button><button class="act" data-a="hide">🌿 Hide<kbd>6</kbd></button>
+    </div>
+    <p style="margin-top:12px"><button type="button" id="arena-reset" class="ghost" style="margin:0;padding:8px 14px">↺ Start again</button></p>
+  </div>
+  <div>
+    <div class="stage" style="height:150px;margin-bottom:12px" aria-hidden="true">
+      <div class="sprite s-jay" style="width:110px;height:110px;background-size:auto 110px;bottom:36px;left:10%;animation:none"></div>
+      <div class="s-boss" style="width:90px;height:90px;background-size:90px 90px;bottom:44px"></div>
+    </div>
+    <div class="bubble" id="arena-bubble">Make your first move…</div>
+    <p style="margin:12px 0 0">The boss guessed right: <span class="score" id="arena-score">0 / 0</span></p>
+    <p class="muted" id="arena-ingame" style="font-size:13px;color:var(--muted)"></p>
+    <div class="trail" id="arena-trail"></div>
+  </div>
+</section>
+<script>
+(function () {
+  const ES = document.documentElement.lang === "es" || {{ (LANG == 'es')|tojson }};
+  const T = ES ? {first: "Haz tu primer movimiento…", think: "CREO QUE VAS A", right: "¡TE LEÍ! ", wrong: "Me engañaste. ",
+                  game: "El modelo del juego diría: ", none: "todavía no sabe nada de ti",
+                  names: {shoot: "DISPARAR", melee: "GOLPEAR", block: "CUBRIRTE", dodge: "ESQUIVAR", jump: "SALTAR", hide: "ESCONDERTE"}}
+               : {first: "Make your first move…", think: "I THINK YOU WILL", right: "I READ YOU! ", wrong: "You tricked me. ",
+                  game: "The in-game model would say: ", none: "it knows nothing about you yet",
+                  names: {shoot: "SHOOT", melee: "HIT", block: "BLOCK", dodge: "DODGE", jump: "JUMP", hide: "HIDE"}};
+  let hist = [], guess = null, right = 0, made = 0;
+  const $ = (id) => document.getElementById(id);
+  async function ask() {
+    const f = new FormData();
+    f.append("_csrf", {{ csrf_token()|tojson }});
+    f.append("history", hist.slice(-40).join(","));
+    [["boss", "on"], ["w", "2"], ["mode", "story"], ["diff", "1"], ["hp", "4"], ["ne", "120"]].forEach(([k, v]) => f.append(k, v));
+    const r = await fetch("{{ url_for('demo_next') }}", {method: "POST", body: f});
+    const d = await r.json();
+    if (!d.prediction) { $("arena-bubble").textContent = d.error || "?"; return; }
+    guess = d.prediction;
+    $("arena-bubble").textContent = T.think + " " + T.names[d.prediction] + " (" + Math.round(d.probability * 100) + "%)";
+    $("arena-ingame").textContent = T.game + (d.in_game && d.in_game.prediction ? T.names[d.in_game.prediction] + " (" +
+      Math.round(d.in_game.probability * 100) + "%)" : T.none);
+  }
+  async function play(a) {
+    let pre = "";
+    if (guess) { made++; if (guess === a) { right++; pre = T.right; } else { pre = T.wrong; } }
+    const s = document.createElement("span"); s.textContent = T.names[a]; if (guess === a) s.className = "hit";
+    $("arena-trail").appendChild(s);
+    hist.push(a);
+    $("arena-score").textContent = right + " / " + made;
+    await ask();
+    if (pre) $("arena-bubble").textContent = pre + $("arena-bubble").textContent;
+  }
+  document.querySelectorAll(".act").forEach((b) => b.addEventListener("click", () => play(b.dataset.a)));
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("input,select,textarea")) return;
+    const k = ["1", "2", "3", "4", "5", "6"].indexOf(e.key);
+    if (k >= 0) play(["shoot", "melee", "block", "dodge", "jump", "hide"][k]);
+  });
+  $("arena-reset").addEventListener("click", () => { hist = []; guess = null; right = made = 0; $("arena-trail").innerHTML = "";
+    $("arena-score").textContent = "0 / 0"; $("arena-bubble").textContent = T.first; $("arena-ingame").textContent = ""; });
+  $("arena-bubble").textContent = T.first;
+})();
+</script>
+<h2>Ask the boss with full details</h2>
 {% if err %}<p class="banner"><b>Input error:</b> {{ err }}</p>{% endif %}
 <form method="post" class="two"><input type="hidden" name="_csrf" value="{{ csrf_token() }}">
   <div class="card">

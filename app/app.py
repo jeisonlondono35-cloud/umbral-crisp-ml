@@ -383,6 +383,21 @@ def demo():
                            title="Live demo", **ctx())
 
 
+@app.route("/demo/next", methods=["POST"])
+def demo_next():
+    """Public mini-game of the demo page ("Play against the model"): same model and same features as /demo, as JSON.
+    Like the /demo form it is public and protected by the page's CSRF token (the /api/ routes need an account)."""
+    try:
+        hist, c = _next_input(request.form.to_dict())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    t = time.perf_counter()
+    out = P.predict_next(hist[-40:], c)
+    ms = 1000 * (time.perf_counter() - t)
+    _log("next_action", {"history": hist[-40:], **c, "source": "demo game"}, out, ms)
+    return jsonify({k: v for k, v in out.items() if k != "features"} | {"latency_ms": round(ms, 2)})
+
+
 @app.route("/feedback", methods=["POST"])
 def feedback():
     d = request.form.to_dict()

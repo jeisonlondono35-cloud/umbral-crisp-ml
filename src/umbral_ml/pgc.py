@@ -342,7 +342,7 @@ REFERENCES = [
 
 SECTIONS = [("title", "Project Title"), ("problem", "Problem Statement and Justification"),
             ("general", "General Objective"), ("specific", "Specific Objectives"),
-            ("framework", "Reference Framework"), ("method", "Methodology and Development Schedule"),
+            ("framework", "Reference Framework"), ("method", "Methodology"),
             ("references", "Bibliographic References")]
 
 

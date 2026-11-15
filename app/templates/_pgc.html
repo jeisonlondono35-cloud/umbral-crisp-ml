@@ -38,19 +38,11 @@
 </section>
 
 <section id="method" class="pgc">
-  <h2>6. Methodology and Development Schedule</h2>
+  <h2>6. Methodology</h2>
   <p>We applied the six phases of CRISP-ML (Studer et al., 2021) in Activity 1, integrated the chosen model into the
   information system in Activity 2, and documented and validated the complete project in Activity 3. Each phase has its
   own page with the evidence: {% for i, name, slug in PHASES %}<a href="{{ url_for('phase', n=i) }}">Phase {{ i }}</a>{{ ', ' if not loop.last else '.' }}{% endfor %}</p>
   {% for head, t in P.method %}<h3>{{ head }}</h3><p>{{ t|safe }}</p>{% endfor %}
-  <h3>Development schedule</h3>
-  <p>Planned dates are our plan at the start of each activity; actual dates come from the Git history of the game
-  and of this repository.</p>
-  <div class="scroll"><table>
-    <tr><th>#</th><th>Activity</th><th>Responsible</th><th>Planned</th><th>Actual</th><th>Deliverable</th></tr>
-    {% for a, who, plan, real, out in P.schedule %}<tr><td>{{ loop.index }}</td><td>{{ a }}</td><td>{{ who }}</td>
-      <td>{{ plan }}</td><td>{{ real }}</td><td>{{ out }}</td></tr>{% endfor %}
-  </table></div>
   <h3>Contributions of each member</h3>
   <div class="grid">{% for ini, name, t in P.contrib %}<div class="card"><h3>{{ ini }} · {{ name }}</h3>{{ t }}</div>{% endfor %}</div>
 </section>

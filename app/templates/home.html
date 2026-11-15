@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block body %}
 {% set A = R.A %}{% set B = R.B %}{% set C = R.C %}
+<section class="hero">
+<div class="hero-text">
 <p class="tag">Machine Learning project · CRISP-ML · intelligent web information system · PGC documentation</p>
 <h1>{{ P.title }}</h1>
 <p class="lead"><b>UMBRAL</b> is a pixel-art action game (Godot 4, published on the web, Android and PC) made by
@@ -9,8 +11,16 @@ the boss reacts (it feints if it expects your shield, waits if it expects your d
 This project takes that machine learning out of the game, studies it with real and simulated play data, compares it with
 other algorithms, chooses the best model with a criterion fixed in advance, deploys it behind this Flask app and plans
 how to monitor it.</p>
-<p><a class="play-hero" href="https://juego-pixelart.onrender.com/game/index.html" target="_blank" rel="noopener">▶ Play UMBRAL now
-  <small>Free, in the browser, no download. Opens in a new tab.</small></a></p>
+<div class="hero-btns"><a class="play-hero" href="https://juego-pixelart.onrender.com/game/index.html" target="_blank" rel="noopener">▶ Play UMBRAL now
+  <small>Free, in the browser, no download. Opens in a new tab.</small></a>
+  <a class="ghost" href="{{ url_for('demo') }}">🎯 Play against the model</a></div>
+</div>
+<div class="stage" aria-hidden="true">
+  <div class="think">I KNOW YOU WILL DODGE… 64%</div>
+  <div class="orb"></div><div class="sprite s-jay"></div><div class="sprite s-jake"></div><div class="s-boss"></div>
+  <i class="soul" style="left:12%;animation-delay:0s"></i><i class="soul" style="left:38%;animation-delay:1.6s"></i><i class="soul" style="left:55%;animation-delay:3.1s"></i><i class="soul" style="left:72%;animation-delay:4.4s"></i>
+</div>
+</section>
 
 {% include "_resources.html" %}
 {% include "_pgc.html" %}
