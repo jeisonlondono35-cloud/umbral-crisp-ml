@@ -7,3 +7,4 @@ reports/_crops/
 instance/
 *.db
 .env
+reports/_i18n_missing.json

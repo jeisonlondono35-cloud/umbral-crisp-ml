@@ -37,6 +37,39 @@ from app.system.models import db as _db  # noqa: E402
 init_system(app)
 
 
+# ------------------------------------------------------------------------------------------- language (EN | ES)
+from app import i18n  # noqa: E402
+
+
+def lang() -> str:
+    v = request.cookies.get(i18n.COOKIE, "en")
+    return v if v in i18n.LANGS else "en"
+
+
+@app.route("/lang/<code>")
+def set_lang(code: str):
+    """The EN | ES button: remember the choice in a cookie (one year) and go back to the same page."""
+    nxt = request.args.get("next", "/")
+    if not nxt.startswith("/") or nxt.startswith("//"):
+        nxt = "/"                                   # only paths of this site (no open redirect)
+    resp = redirect(nxt)
+    if code in i18n.LANGS:
+        resp.set_cookie(i18n.COOKIE, code, max_age=365 * 24 * 3600, samesite="Lax", httponly=True)
+    return resp
+
+
+@app.after_request
+def to_spanish(resp):
+    if lang() == "es" and resp.mimetype == "text/html" and not resp.direct_passthrough:
+        resp.set_data(i18n.translate_html(resp.get_data(as_text=True)))
+    return resp
+
+
+@app.context_processor
+def lang_ctx():
+    return {"LANG": lang()}
+
+
 def _warm_up() -> None:
     """Load the models and make one prediction at start-up, BEFORE serving, so the first visitor does not
     wait (~13 s on Render's free instance). It must not run in a background thread: a request importing

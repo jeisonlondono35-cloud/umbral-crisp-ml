@@ -136,6 +136,8 @@ src/umbral_ml/
   pgc.py                    PGC documentation: one source for the homepage and the final report
   report_final.py           final PDF (R3A4): PGC + Part I (Activity 1) + Part II (Activity 2) + manuals
 app/system/                 the information system (auth, models, views, model service)
+app/i18n.py, app/i18n/es.json  English / Spanish: the EN | ES button (top right) translates every page on the server
+tools/i18n_extract.py       lists the texts of every page that are not yet in es.json
 tests/                      automatic tests (pytest)
 tools/                      operational review and diagrams
 app/                        Flask app: app.py + templates (homepage with the PGC, phase1..6, demo, docs)

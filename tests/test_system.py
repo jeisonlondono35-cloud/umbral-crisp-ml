@@ -302,3 +302,19 @@ def test_pgc_documentation_is_public_on_the_homepage():
         assert r.status_code == 200 and text in r.text and "<script" not in r.text.split("<article")[1], name
     assert c.get("/docs/secret").status_code == 404
     assert c.get("/app/").status_code == 302          # the operational modules stay protected
+
+
+def test_language_switch_en_es():
+    """The EN | ES button: English by default, Spanish on demand (also the system pages), safe redirect."""
+    c = client()
+    assert "Problem Statement and Justification" in c.get("/").text
+    r = c.get("/lang/es?next=/phase/2")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/phase/2")
+    home = c.get("/").text
+    assert 'lang="es"' in home and "Planteamiento del problema y justificación" in home
+    assert "Iniciar sesión" in c.get("/login").text
+    r = c.post("/login", data={"_csrf": tok(c), "username": "nobody", "password": "wrong-password1"})
+    assert "Usuario o contraseña incorrectos." in r.text            # server messages are translated too
+    assert c.get("/lang/es?next=//evil.example").headers["Location"].endswith("/")
+    c.get("/lang/en")
+    assert "Problem Statement and Justification" in c.get("/").text
