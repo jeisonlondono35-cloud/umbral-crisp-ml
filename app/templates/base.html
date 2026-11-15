@@ -7,23 +7,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f5f1;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#8a8984;--line:#e6e5e0;
-  --accent:#2a78d6;--accent-soft:#e3eefb;--warn:#a35f00;--warn-soft:#fff3dc;--good:#0a7a3e;--bad:#b42318;--nav:#14131a;--navink:#f0efec}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121116;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;
-  --muted:#8f8e88;--line:#2e2d33;--accent:#3987e5;--accent-soft:#1d2b3d;--warn:#e0a63a;--warn-soft:#3a2c12;--good:#4cc27e;--bad:#f07a70;--nav:#0b0a0f}}
-:root[data-theme="dark"]{--bg:#121116;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#8f8e88;--line:#2e2d33;
-  --accent:#3987e5;--accent-soft:#1d2b3d;--warn:#e0a63a;--warn-soft:#3a2c12;--good:#4cc27e;--bad:#f07a70;--nav:#0b0a0f}
+/* UMBRAL palette, the same as the game's website: always dark (night purple, soul cyan, gold, orb red) */
+:root{color-scheme:dark;--bg:#0b0d13;--surface:#161a26;--ink:#e6e3df;--ink2:#b7bccb;--muted:#9aa0b4;--line:#2a3042;
+  --accent:#6fd3e0;--accent-soft:#132a33;--gold:#f2c14e;--red:#e2516a;--warn:#f2c14e;--warn-soft:#2c2412;
+  --good:#5fd39a;--bad:#ff8a8a;--nav:#07080d;--navink:#e6e3df}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+h1{color:var(--gold)}
+.play{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff!important;font-weight:700;
+  border-radius:8px;padding:7px 12px!important;opacity:1!important;text-decoration:none;box-shadow:0 0 0 1px #ff8fa3 inset,0 0 18px #e2516a55}
+.play:hover{background:#f0627a!important;color:#fff!important}
+.play-hero{display:inline-flex;align-items:center;gap:10px;background:var(--red);color:#fff;font:700 17px Inter;padding:14px 22px;
+  border-radius:10px;text-decoration:none;box-shadow:0 0 0 2px #ff8fa3 inset,0 0 28px #e2516a66;margin:6px 12px 6px 0}
+.play-hero:hover{background:#f0627a}
+.play-hero small{display:block;font:400 12px Inter;opacity:.9}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#1c1530 0,transparent 60%),radial-gradient(900px 500px at -10% 110%,#10202a 0,transparent 55%),var(--bg);background-attachment:fixed;color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
 a{color:var(--accent)}
 header{background:var(--nav);color:var(--navink)}
 .top{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-.logo{font-family:"Press Start 2P",monospace;font-size:14px;color:#f6c453;text-decoration:none;letter-spacing:1px}
-.logo small{display:block;font:600 11px Inter;color:#c3c2b7;letter-spacing:0;margin-top:4px}
+.logo{font-family:"Press Start 2P",monospace;font-size:14px;color:var(--gold);text-decoration:none;letter-spacing:1px}
+.logo small{display:block;font:600 11px Inter;color:var(--muted);letter-spacing:0;margin-top:4px}
 nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
 nav a{color:var(--navink);text-decoration:none;padding:6px 9px;border-radius:6px;font-size:13px;opacity:.85}
-nav a:hover,nav a.on{background:#2a2933;opacity:1}
-nav a .n{display:inline-block;width:18px;height:18px;border-radius:50%;background:#2a78d6;color:#fff;text-align:center;font-size:11px;line-height:18px;margin-right:5px}
+nav a:hover,nav a.on{background:#1b2030;opacity:1;color:var(--gold)}
+nav a .n{display:inline-block;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#07080d;text-align:center;font-size:11px;line-height:18px;margin-right:5px;font-weight:700}
 main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
 h1{font-size:28px;margin:6px 0 4px;line-height:1.2}
 h2{font-size:20px;margin:34px 0 8px;padding-top:10px;border-top:1px solid var(--line)}
@@ -57,20 +63,20 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;pad
 label{display:block;font-size:13px;color:var(--ink2);margin:8px 0 3px}
 input,select,textarea{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit}
 input[type=checkbox]{width:auto}
-button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 18px;font:600 14px Inter;cursor:pointer;margin-top:12px}
+button{background:var(--gold);color:#07080d;border:0;border-radius:8px;padding:10px 18px;font:600 14px Inter;cursor:pointer;margin-top:12px}
 .bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent);border-radius:5px}
 footer{max-width:1180px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:12.5px}
 ul.tight li{margin:3px 0}
-.lang{display:flex;border:1px solid #3a3944;border-radius:7px;overflow:hidden;flex:none}
+.lang{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none}
 .lang a{color:var(--navink);text-decoration:none;font:700 12px Inter,system-ui,sans-serif;padding:5px 9px;opacity:.7}
-.lang a.on{background:var(--accent);color:#fff;opacity:1}.lang a:hover{opacity:1}
+.lang a.on{background:var(--gold);color:#07080d;opacity:1}.lang a:hover{opacity:1}
 .toc{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:18px 0;font-size:13.5px}
 .toc a{color:var(--accent);text-decoration:none}.toc a:hover{text-decoration:underline}
 section.pgc{scroll-margin-top:12px;max-width:980px}section.pgc p{line-height:1.6}
 .ptitle{font-size:20px;font-weight:700;margin:6px 0}
 .pill{display:inline-block;padding:1px 8px;border-radius:9px;font-size:12px;font-weight:600;white-space:nowrap}
-.pill.ok{background:#e3f4ea;color:var(--good)}.pill.part{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:#12301f;color:var(--good)}.pill.part{background:var(--warn-soft);color:var(--warn)}
 .refs p{padding-left:2em;text-indent:-2em;margin:6px 0;font-size:14px;overflow-wrap:anywhere}
 .res{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:16px 0}
 .res a{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:3px}.res a:hover{border-color:var(--accent)}
@@ -78,17 +84,17 @@ section.pgc{scroll-margin-top:12px;max-width:980px}section.pgc p{line-height:1.6
 .video{position:relative;padding-top:56.25%;max-width:860px}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:10px}
 .doc{max-width:900px}.doc h1{font-size:26px}.doc p,.doc li{line-height:1.6}
 .help a.on{font-weight:700}
-.sys{background:#1f1e27;border-top:1px solid #2a2933}
+.sys{background:#10131c;border-top:1px solid var(--line)}
 .sys .top{padding:6px 16px}
 .sys nav{margin-left:0}
 .sys nav a .badge,.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:#d9822b;color:#fff;font-size:11px;text-align:center;margin-left:4px}
-.who{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12.5px;color:#c3c2b7}
-.who form{margin:0}.who button{margin:0;padding:5px 10px;font-size:12.5px;background:#2a2933}
+.who{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.who form{margin:0}.who button{margin:0;padding:5px 10px;font-size:12.5px;background:#1b2030;color:var(--ink)}
 .flash{padding:10px 14px;border-radius:6px;margin:10px 0;border-left:4px solid var(--accent);background:var(--accent-soft)}
-.flash.error{border-color:var(--bad);background:#fde8e6;color:#5b130c}
-.flash.ok{border-color:var(--good);background:#e3f5ea;color:#06371c}
-@media (prefers-color-scheme:dark){.flash.error{background:#3a1715;color:#f6c9c4}.flash.ok{background:#12301f;color:#bfe9cf}}
-.btn{display:inline-block;background:var(--accent);color:#fff;border-radius:8px;padding:8px 14px;font:600 13.5px Inter;text-decoration:none;border:0;cursor:pointer}
+.flash.error{border-color:var(--bad);background:#3a1715;color:#f6c9c4}
+.flash.ok{border-color:var(--good);background:#12301f;color:#bfe9cf}
+
+.btn{display:inline-block;background:var(--accent);color:#07080d;border-radius:8px;padding:8px 14px;font:600 13.5px Inter;text-decoration:none;border:0;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
 .btn.small{padding:4px 9px;font-size:12.5px;margin:0}
 .btn.danger{background:var(--bad)}
@@ -97,8 +103,8 @@ section.pgc{scroll-margin-top:12px;max-width:980px}section.pgc p{line-height:1.6
 .status{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--line)}
 .st-registered,.st-open,.st-pending{background:var(--warn-soft);color:var(--ink)}
 .st-analyzed,.st-in_progress,.st-approved{background:var(--accent-soft)}
-.st-reviewed,.st-resolved,.st-applied,.st-closed{background:#e3f5ea;color:#06371c}
-.st-rejected,.st-suspended{background:#fde8e6;color:#5b130c}
+.st-reviewed,.st-resolved,.st-applied,.st-closed{background:#12301f;color:#bfe9cf}
+.st-rejected,.st-suspended{background:#3a1715;color:#f6c9c4}
 .form-grid{display:grid;gap:4px 14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .help{font-size:12.5px;color:var(--muted);margin-top:2px}
 .kpi{font-size:26px;font-weight:700}
@@ -112,6 +118,7 @@ section.pgc{scroll-margin-top:12px;max-width:980px}section.pgc p{line-height:1.6
   <nav>
     {% for i, name, slug in PHASES %}<a href="{{ url_for('phase', n=i) }}" class="{{ 'on' if n == i }}" title="{{ name }}"><span class="n">{{ i }}</span>{{ slug|capitalize }}</a>{% endfor %}
     <a href="{{ url_for('home') }}#title" title="PGC documentation">PGC</a>
+    <a class="play" href="https://juego-pixelart.onrender.com/game/index.html" target="_blank" rel="noopener">▶ Play UMBRAL</a>
     <a href="{{ url_for('demo') }}" class="{{ 'on' if title == 'Live demo' }}">▶ Demo</a>
     <a href="{{ url_for('doc_page', name='user-manual') }}" class="{{ 'on' if request.path.startswith('/docs') }}">Docs</a>
     {% if has_pdf3 %}<a href="{{ url_for('report_final_pdf') }}">Report</a>{% elif has_pdf %}<a href="{{ url_for('report_pdf') }}">PDF</a>{% endif %}
