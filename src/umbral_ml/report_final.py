@@ -1,4 +1,4 @@
-"""Final technical report of the whole project (Activity 3): "R3A4 UMBRAL Final Report" (PDF, APA 7).
+"""Final technical report of the whole project (Activity 3): "R3A4 From Code To The World" (PDF, APA 7).
 
     python -m src.umbral_ml.report_final
 
@@ -29,7 +29,8 @@ from .config import REPORTS
 from .report import (AUTHORS, CEN, COURSE, DATE, DOUBLE, INSTITUTION, REG, SIZE, TEACHER, Doc, apa_table, h, para,
                      seriation)
 
-FILE_NAME = "R3A4 UMBRAL Final Report.pdf"
+REPORT_NAME = "From Code To The World"
+FILE_NAME = f"R3A4 {REPORT_NAME}.pdf"
 IMG = R2.IMG
 
 
@@ -44,7 +45,8 @@ def main() -> None:
     if (IMG / "logo_udec.png").exists():
         from reportlab.platypus import Image  # noqa: PLC0415
         s += [Spacer(1, 0.2 * inch), Image(str(IMG / "logo_udec.png"), width=1.1 * inch, height=1.1 * inch * 150 / 99)]
-    s += [Spacer(1, 0.5 * inch), Paragraph(f"<b>{C['title']}</b>", CEN), Spacer(1, DOUBLE)]
+    s += [Spacer(1, 0.5 * inch), Paragraph(f"<b>{REPORT_NAME}</b>", CEN), Paragraph(f"<b>{C['title']}</b>", CEN),
+          Spacer(1, DOUBLE)]
     s += [Paragraph(a, CEN) for a in AUTHORS]
     s += [Paragraph(INSTITUTION, CEN), Paragraph(COURSE, CEN), Paragraph(TEACHER, CEN), Paragraph(DATE, CEN),
           Spacer(1, DOUBLE),
@@ -194,7 +196,7 @@ def main() -> None:
     R0.PART.update(letters={})
 
     out = Path(os.environ["REPORT_OUT"]) if os.environ.get("REPORT_OUT") else REPORTS / FILE_NAME
-    Doc(str(out), title=C["title"], author=", ".join(AUTHORS)).multiBuild(s)
+    Doc(str(out), title=f"R3A4 {REPORT_NAME}: {C['title']}", author=", ".join(AUTHORS)).multiBuild(s)
     print("report written:", out, "| tables", R0.NUM["table"], "| figures", R0.NUM["figure"])
 
 
