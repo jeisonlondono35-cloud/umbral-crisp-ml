@@ -9,6 +9,10 @@ next and whether a boss attack would hit. Every request is logged for monitoring
     <h2 style="margin-top:0;border:0;padding-top:0">🎯 Play against the model</h2>
     <p>Choose your actions as if you were fighting. Before each click the boss guesses what you will do next, using the
     <b>same saved model</b> as this page and the API. Try to be unpredictable!</p>
+    <p class="note" style="font-size:13.5px">When does it guess right? When you repeat a habit, like real players do.
+    Try pressing Shoot, Shoot, Dodge several times: after a few rounds the boss starts to read you. If you press at
+    random, it fails most of the time, because there is no pattern to learn.</p>
+    <p><button type="button" id="arena-pattern" class="ghost" style="padding:8px 14px">▶ Play a pattern for me (Shoot, Shoot, Dodge × 6)</button></p>
     <div class="acts">
       <button class="act" data-a="shoot">🏹 Shoot<kbd>1</kbd></button><button class="act" data-a="melee">🗡 Hit<kbd>2</kbd></button>
       <button class="act" data-a="block">🛡 Block<kbd>3</kbd></button><button class="act" data-a="dodge">💨 Dodge<kbd>4</kbd></button>
@@ -32,9 +36,11 @@ next and whether a boss attack would hit. Every request is logged for monitoring
   const ES = document.documentElement.lang === "es" || {{ (LANG == 'es')|tojson }};
   const T = ES ? {first: "Haz tu primer movimiento…", think: "CREO QUE VAS A", right: "¡TE LEÍ! ", wrong: "Me engañaste. ",
                   game: "El modelo del juego diría: ", none: "todavía no sabe nada de ti",
+                  tip: "Juegas sin un patrón, así que no hay nada que aprender: repite algo (Disparar, Disparar, Esquivar) y verás.",
                   names: {shoot: "DISPARAR", melee: "GOLPEAR", block: "CUBRIRTE", dodge: "ESQUIVAR", jump: "SALTAR", hide: "ESCONDERTE"}}
                : {first: "Make your first move…", think: "I THINK YOU WILL", right: "I READ YOU! ", wrong: "You tricked me. ",
                   game: "The in-game model would say: ", none: "it knows nothing about you yet",
+                  tip: "You play without a pattern, so there is nothing to learn: repeat something (Shoot, Shoot, Dodge) and see.",
                   names: {shoot: "SHOOT", melee: "HIT", block: "BLOCK", dodge: "DODGE", jump: "JUMP", hide: "HIDE"}};
   let hist = [], guess = null, right = 0, made = 0;
   const $ = (id) => document.getElementById(id);
@@ -60,7 +66,14 @@ next and whether a boss attack would hit. Every request is logged for monitoring
     $("arena-score").textContent = right + " / " + made;
     await ask();
     if (pre) $("arena-bubble").textContent = pre + $("arena-bubble").textContent;
+    var boss = document.querySelector(".arena .s-boss");
+    if (boss && pre === T.right) { boss.classList.remove("hitfx"); void boss.offsetWidth; boss.classList.add("hitfx"); }
+    if (made >= 8 && right / made < 0.2) $("arena-ingame").textContent += " · " + T.tip;
   }
+  $("arena-pattern").addEventListener("click", async () => {
+    const seq = ["shoot", "shoot", "dodge"];
+    for (let k = 0; k < 18; k++) { await play(seq[k % 3]); await new Promise((r) => setTimeout(r, 350)); }
+  });
   document.querySelectorAll(".act").forEach((b) => b.addEventListener("click", () => play(b.dataset.a)));
   document.addEventListener("keydown", (e) => {
     if (e.target.closest("input,select,textarea")) return;

@@ -1543,5 +1543,7 @@
 "(opens in a new tab)": "(se abre en otra pestaña)",
 "Main menu": "Menú principal",
 "UMBRAL CRISP-ML, home": "UMBRAL CRISP-ML, inicio",
-"🎯 Demo": "🎯 Demo"
+"🎯 Demo": "🎯 Demo",
+"When does it guess right? When you repeat a habit, like real players do. Try pressing Shoot, Shoot, Dodge several times: after a few rounds the boss starts to read you. If you press at random, it fails most of the time, because there is no pattern to learn.": "¿Cuándo acierta? Cuando repites una costumbre, como hacen los jugadores de verdad. Prueba a pulsar Disparar, Disparar, Esquivar varias veces: después de unas rondas el jefe empieza a leerte. Si pulsas al azar, falla casi siempre, porque no hay ningún patrón que aprender.",
+"▶ Play a pattern for me (Shoot, Shoot, Dodge × {n})": "▶ Juega un patrón por mí (Disparar, Disparar, Esquivar × {n})"
 }
