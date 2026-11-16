@@ -13,7 +13,7 @@ from .config import RAW, REPORTS, ROOT
 PROJECT_TITLE = ("UMBRAL: Machine Learning Player Modeling for Fair Adaptive Boss Fights, "
                  "Integrated Into a Player Information System")
 SHORT_TITLE = "UMBRAL: Player Modeling for Fair Adaptive Boss Fights"
-VIDEO_URL = ""          # the 20-minute presentation (YouTube unlisted or Drive); empty = "coming soon"
+VIDEO_URL = "https://youtu.be/B2SWDnp1Icg"   # the 20-minute presentation in English (YouTube, unlisted)
 TEAM = [("J.A", "Jeison Arboleda Londoño"), ("J.P", "Juan Pablo Lugo Cárdenas"),
         ("J.Q", "Johan Sebastián Quintero Ramírez")]
 

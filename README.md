@@ -14,7 +14,7 @@ the PGC structure (Activity 3).
 | CRISP-ML evidence | the six phase pages of the app, `reports/experiments.csv`, `reports/results.json`, report R3A2 |
 | Activity 1 report R3A2 Traces in Data | [`reports/R3A2 Traces in data.pdf`](<reports/R3A2 Traces in data.pdf>) (`/report.pdf`) |
 | Activity 2 report R3A3 Speaking Models | [`reports/R3A3 Speaking Models.pdf`](<reports/R3A3 Speaking Models.pdf>) (`/report-activity2.pdf`) |
-| Presentation video (20 min, English) | on the homepage (link in `src/umbral_ml/pgc.py`, `VIDEO_URL`) |
+| Presentation video (20 min, English) | https://youtu.be/B2SWDnp1Icg (also on the homepage) |
 
 ## Run it locally
 

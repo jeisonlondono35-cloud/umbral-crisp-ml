@@ -56,7 +56,7 @@ def main() -> None:
           Paragraph(f'<link href="{R0.REPO_URL}"><u>GitHub Repository</u></link>', CEN),
           Paragraph(f'<link href="{R0.APP_URL}"><u>Published Project and PGC Documentation</u></link>', CEN)]
     if C["video"]:
-        s.append(Paragraph(f'<link href="{C["video"]}"><u>Presentation Video</u></link>', CEN))
+        s.append(Paragraph(f'Video link: <link href="{C["video"]}"><u>{C["video"]}</u></link>', CEN))
     s.append(PageBreak())
     toc = TableOfContents()
     toc.levelStyles = [ParagraphStyle(f"t{i}", fontName=REG, fontSize=SIZE, leading=19, leftIndent=0.35 * inch * i,
