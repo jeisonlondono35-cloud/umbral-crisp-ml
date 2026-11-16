@@ -3,8 +3,13 @@
   <h2>Presentation video</h2>
   {% if P.video %}
     {% set yt = P.video.replace('watch?v=', 'embed/').replace('youtu.be/', 'www.youtube.com/embed/') %}
-    {% if 'youtube' in yt %}<div class="video"><iframe src="{{ yt }}" title="UMBRAL final presentation" allowfullscreen></iframe></div>{% endif %}
-    <p><a href="{{ P.video }}">Open the video</a> (20 minutes, in English, the three members of the team).</p>
+    {# YouTube needs to know which site embeds the player (error 153 without it); the site's policy is same-origin,
+       so this iframe sends only the origin of the page, nothing else #}
+    {% if 'youtube' in yt %}<div class="video"><iframe src="{{ yt }}" title="UMBRAL final presentation"
+      referrerpolicy="strict-origin-when-cross-origin"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen></iframe></div>{% endif %}
+    <p><a href="{{ P.video }}" target="_blank" rel="noopener">Open the video on YouTube</a> (20 minutes, in English, the three members of the team).</p>
   {% else %}
     <p class="note">The 20-minute presentation in English will be published here.</p>
   {% endif %}
